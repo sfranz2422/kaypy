@@ -44,9 +44,9 @@ dependencies = [
 web = ["pygbag>=0.9", "imageio-ffmpeg>=0.5"]
 
 [project.urls]
-Homepage = "https://github.com/stephenfranz/kaypy"
-Repository = "https://github.com/stephenfranz/kaypy"
-Documentation = "https://github.com/stephenfranz/kaypy/blob/main/GUIDE.md"
+Homepage = "https://github.com/sfranz2422/kaypy"
+Repository = "https://github.com/sfranz2422/kaypy"
+Documentation = "https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md"
 
 [project.scripts]
 kaypy = "kaplay.cli:main"

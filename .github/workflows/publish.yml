@@ -1,0 +1,63 @@
+name: publish to PyPI
+
+# Pushing does NOT publish. This runs only when you publish a GitHub
+# Release, so cutting a release is the deliberate act that ships a version.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Required for PyPI Trusted Publishing: the runner proves to PyPI who
+      # it is with a short-lived OIDC token, so there is no API token to
+      # create, paste into GitHub, or ever rotate.
+      id-token: write
+
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          pip install -e .
+          pip install build twine
+
+      - name: Refuse to publish if the tag and the version disagree
+        if: github.event_name == 'release'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "release tag: $TAG    pyproject version: $VERSION"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' does not match version '$VERSION' in pyproject.toml. Bump the version, or retag." 
+            exit 1
+          fi
+
+      - name: Run the tests before shipping anything
+        run: |
+          set -e
+          for t in tests/test_*.py; do
+            echo "::group::$t"
+            python "$t"
+            echo "::endgroup::"
+          done
+
+      - name: Build
+        run: python -m build
+
+      - name: Check the artifacts render on PyPI
+        run: twine check dist/*
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1

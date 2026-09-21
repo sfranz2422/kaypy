@@ -13,7 +13,7 @@ Nothing is transpiled and nothing runs through a JavaScript bridge. It's
 as a desktop window with `python game.py`, or as a web page with
 `python webbuild.py game.py`.
 
-**New here?** [`GUIDE.md`](GUIDE.md) is a thirteen-lesson course that starts from
+**New here?** [`GUIDE.md`](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md) is a thirteen-lesson course that starts from
 nothing and ends with a state-machine enemy AI — the Learn Kaplay lessons,
 written for Python.
 
@@ -394,7 +394,7 @@ there yet, and never overwrites a real file.
 
 ## How it works, and what's rough
 
-[`DEVELOPING.md`](DEVELOPING.md) has the architecture, the test suite, the
+[`DEVELOPING.md`](https://github.com/sfranz2422/kaypy/blob/main/DEVELOPING.md) has the architecture, the test suite, the
 known limitations, and the war stories — including the three real physics bugs
 and the four pygbag incompatibilities that had to be fixed to make the web
 export work at all.

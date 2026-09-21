@@ -1,0 +1,52 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    env:
+      # No display and no sound card on a runner. pygame-ce's wheels bundle
+      # SDL, so nothing needs apt-get installing.
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install kaypy
+        run: pip install -e .
+
+      - name: Run the test scripts
+        run: |
+          set -e
+          for t in tests/test_*.py; do
+            echo "::group::$t"
+            python "$t"
+            echo "::endgroup::"
+          done
+
+      - name: Run every lesson for a few frames
+        env:
+          KAYPY_TEST_MAX_FRAMES: "30"
+        run: |
+          set -e
+          cd examples
+          for f in lesson*.py; do
+            echo "::group::$f"
+            python "$f"
+            echo "::endgroup::"
+          done
