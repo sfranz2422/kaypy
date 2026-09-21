@@ -105,6 +105,10 @@ class Engine:
         self._scenes: dict[str, callable] = {}
         self._current_scene = None
         self._dt = 0.0
+        # Game time, not wall time: it advances with the frames, so it stops
+        # when the game does. A sine wave driven by wall time jumps when a
+        # paused game resumes.
+        self._elapsed = 0.0
         self._running = True
         self._started = False
         self._font_cache = {}
@@ -129,6 +133,9 @@ class Engine:
 
     def dt(self):
         return self._dt
+
+    def elapsed(self):
+        return self._elapsed
 
     def mousePos(self) -> Vec2:
         x, y = pygame.mouse.get_pos()
@@ -256,6 +263,7 @@ class Engine:
             # below. So on web just measure, don't pace.
             elapsed = self.clock.tick() if self.is_web else self.clock.tick(60)
             self._dt = min(elapsed / 1000.0, 0.05)
+            self._elapsed += self._dt
 
             self.events.process_pygame_events(pg_events, self._objs)
             self.events.run_update_handlers(self._objs)

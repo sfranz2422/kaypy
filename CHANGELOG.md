@@ -31,6 +31,23 @@ positions or colour tuples. Returns a handle with `.then()`, `.cancel()`,
 - A misspelled curve says which names exist rather than raising a bare
   AttributeError about a module.
 
+**The small Kaplay names.** `time()`, `destroy()`, `destroyAll()`,
+`isKeyDown()`, `rgb()`, `lerp()`, `clamp()`, `chance()`, `wave()`,
+`deg2rad()`, `rad2deg()`, and the object-free `onCollide(tagA, tagB, fn)`.
+
+None matters on its own; together they are the difference between a Kaplay
+example found online running as written and dying on its third line with a
+NameError. "KAPLAY's documentation still tells you what to write" is only true
+while the names in it exist.
+
+- `time()` is the **game's** clock, not the wall's, so it stops when the game
+  does — a sine wave driven by wall time jumps when a paused game resumes.
+- `onCollide(tagA, tagB, fn)` hands the handler both objects **in the order
+  the tags were named**, whichever order the collision system happened to meet
+  them in. Otherwise a student's `bullet.destroy()` destroys the enemy.
+- `rgb()` takes three numbers, a hex string long or short, or one number for a
+  grey — and says what is missing rather than inventing a third channel.
+
 **Assigning over a component's method is now refused.** `rock.size = 3` used
 to overwrite `circle()`'s `size()` method and kill the game later, in the
 collision system, with `'int' object is not callable` — nowhere near the line

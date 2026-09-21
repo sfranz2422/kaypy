@@ -80,6 +80,14 @@ class CollisionSystem:
 
                 if ra.colliderect(rb):
                     is_new = b._id not in a_touch
+                    if is_new:
+                        # The object-free onCollide(tagA, tagB, fn). Here
+                        # rather than on the objects, because neither object
+                        # in a bullets-and-enemies pair exists when the
+                        # handler is written.
+                        from .engine import _engine
+                        if _engine is not None:
+                            _engine.events.fire_tag_collision(a, b)
                     for t in b.tags:
                         a._fire("collide" if is_new else "collideUpdate", t, b)
                     for t in a.tags:

@@ -58,6 +58,9 @@ def key_name(code: int) -> str:
 class EventManager:
     def __init__(self):
         self.key_down_handlers = []
+        # (tag_a, tag_b, fn) — the object-free onCollide, fired by
+        # CollisionSystem when a NEW touch begins between two tags.
+        self.collide_tag_handlers = []
         self.key_press_handlers = []
         self.key_release_handlers = []
         self.click_handlers = []
@@ -65,10 +68,28 @@ class EventManager:
 
     def clear(self):
         self.key_down_handlers.clear()
+        self.collide_tag_handlers.clear()
         self.key_press_handlers.clear()
         self.key_release_handlers.clear()
         self.click_handlers.clear()
         self.update_handlers.clear()
+
+    def on_collide_tags(self, tag_a, tag_b, fn):
+        self.collide_tag_handlers.append((tag_a, tag_b, fn))
+        return fn
+
+    def fire_tag_collision(self, a, b):
+        """A new touch between a and b — tell anyone watching for the pair.
+
+        Checked both ways round, so onCollide("bullet", "enemy") fires
+        whichever of the two the collision system happened to look at first.
+        The handler always gets them in the order the tags were named.
+        """
+        for tag_a, tag_b, fn in list(self.collide_tag_handlers):
+            if a.is_(tag_a) and b.is_(tag_b):
+                call_flexible(fn, a, b)
+            elif b.is_(tag_a) and a.is_(tag_b):
+                call_flexible(fn, b, a)
 
     def on_key_down(self, key, fn):
         self.key_down_handlers.append((resolve_key(key), fn))

@@ -7,6 +7,8 @@ from .vec2 import vec2, Vec2
 from .engine import Engine, current_engine, rand, randi, choose
 from .debugmod import debug
 from .easings import easings
+from .helpers import (time, destroy, destroyAll, isKeyDown, rgb, lerp,
+                      clamp, chance, wave, deg2rad, rad2deg)
 from .level import addLevel, Level
 from .kaboom import addKaboom
 
@@ -31,10 +33,12 @@ __all__ = [
     "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
     "move", "offscreen", "tile", "state",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
-    "wait", "loop", "tween", "easings",
+    "wait", "loop", "tween", "easings", "onCollide",
     "scene", "go",
     "width", "height", "center", "dt", "vec2", "Vec2",
-    "rand", "randi", "choose",
+    "rand", "randi", "choose", "chance", "lerp", "clamp", "wave",
+    "time", "destroy", "destroyAll", "isKeyDown", "rgb",
+    "deg2rad", "rad2deg",
     "mousePos", "toWorld",
     "setCamPos", "setCamScale", "shake",
     "play",
@@ -121,6 +125,33 @@ def wait(seconds, fn=None):
 
 def loop(seconds, fn=None):
     return register_or_decorate(fn, lambda f: current_engine().timers.loop(seconds, f))
+
+
+def onCollide(tag_a, tag_b, fn=None):
+    """Every time anything tagged `tag_a` touches anything tagged `tag_b`.
+
+        onCollide("bullet", "enemy", lambda b, e: (b.destroy(), e.destroy()))
+
+        @onCollide("player", "spike")
+        def hurt(player, spike):
+            go("gameover")
+
+    The object-free form of `obj.onCollide(tag, fn)`, for when the pair
+    matters and neither object is one you are holding — bullets and enemies
+    that both appear and vanish while the game runs. The handler is given
+    both objects, in the order the tags were named.
+
+    Registered against objects as they appear, so it covers ones created
+    later, which is the whole reason to prefer it over wiring each bullet up
+    as it is made.
+    """
+    from .callutil import register_or_decorate
+
+    def register(f):
+        current_engine().events.on_collide_tags(tag_a, tag_b, f)
+        return f
+
+    return register_or_decorate(fn, register)
 
 
 def tween(start, end, duration, setter, ease=None):

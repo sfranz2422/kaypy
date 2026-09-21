@@ -397,6 +397,7 @@ An `anims` entry looks like `{"run": {"from": 0, "to": 8, "speed": 12, "loop": T
 | `onKeyRelease(key, fn)` | Once, when it comes back up. |
 | `onClick(fn)` | Any click. `obj.onClick(fn)` for clicks on that object. |
 | `obj.onCollide(tag, fn)` | Once, when a touch begins. |
+| `onCollide(tagA, tagB, fn)` | Once, when anything tagged A touches anything tagged B. |
 | `obj.onCollideUpdate(tag, fn)` | Every frame the two stay touching. |
 | `obj.onCollideEnd(tag, fn)` | Once, when they come apart. |
 | `wait(seconds, fn)` | Once, later. |
@@ -435,7 +436,13 @@ def build_game(): ...
 | `dt()` | Seconds since the last frame. |
 | `vec2(x, y)` | A vector. Supports `+`, `-`, `*`, `.len()`, `.unit()`, `.dist()`. |
 | `Vec2.fromAngle(degrees)` | A unit vector pointing that way — which direction a rotated object faces. |
-| `rand(a, b)`, `randi(a, b)`, `choose(seq)` | Randomness. |
+| `rand(a, b)`, `randi(a, b)`, `choose(seq)`, `chance(p)` | Randomness. |
+| `time()` | Seconds since `kaplay()` — the game's clock, so it pauses when the game does. |
+| `lerp(a, b, t)`, `clamp(v, lo, hi)`, `wave(lo, hi, t)` | Blend, bound, swing. |
+| `rgb(r, g, b)` | A colour. Takes `rgb(255, 128, 0)`, `rgb("#ff8800")` or `rgb(200)` for a grey. |
+| `destroy(obj)`, `destroyAll(tag)` | Remove one, or every object with a tag. |
+| `isKeyDown(key)` | Ask instead of being told — the polling form of `onKeyDown`. |
+| `deg2rad(d)`, `rad2deg(r)` | Angles. |
 | `mousePos()`, `toWorld(pos)` | Where the mouse is, on screen and in the world. |
 | `setCamPos(pos)`, `setCamScale(n)`, `shake(n)` | The camera. |
 | `play(name, loop=False, volume=1.0)` | Play a sound. Returns a handle with settable `.paused` and `.volume`. |
