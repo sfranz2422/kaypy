@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+**`rotate()` — things can turn.** Asteroids was not writable before this;
+there was no rotate component and no `.angle` on an object.
+
+- `rotate(degrees)` turns an object clockwise about its **anchor**, so
+  `anchor("center")` spins on the spot. Adds `.angle`, `.rotateBy(n)`,
+  `.rotateTo(n)`.
+- The **collision box does not turn** with it, deliberately, as in Kaplay. A
+  hitbox that rotated would grow and shrink twice a revolution, so a spinning
+  asteroid would catch the player at some angles and not others.
+- `Vec2.fromAngle(degrees)` — the partner to it. An object at `angle` faces
+  `Vec2.fromAngle(obj.angle)`, which is how a ship thrusts the way it points
+  without trigonometry in the middle of a lesson.
+- `examples/asteroids.py`: turning, thrust, momentum, screen-wrap, splitting
+  rocks.
+
+**Assigning over a component's method is now refused.** `rock.size = 3` used
+to overwrite `circle()`'s `size()` method and kill the game later, in the
+collision system, with `'int' object is not callable` — nowhere near the line
+responsible. It now raises immediately, names the method, and suggests picking
+another name. Found by writing asteroids.py and losing a while to it.
+
+`tests/test_rotate.py`: 32 checks. The direction and the pivot are measured
+rather than reasoned about — a marker pixel is drawn and the test asks where
+it landed — because both conventions are easy to get backwards and neither
+mistake raises anything.
+
 ## 0.2.0
 
 **The install is 92% smaller: 1366 KB → 113 KB.**

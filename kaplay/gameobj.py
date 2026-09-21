@@ -100,6 +100,21 @@ class GameObj:
         if comps:
             for c in comps.values():
                 if hasattr(c, name):
+                    # Refuse to replace a component's METHOD with a value.
+                    # `rock.size = 3` looks like storing a number on your own
+                    # object; it actually overwrites circle()'s size() method,
+                    # and the game then dies somewhere else entirely with
+                    # "'int' object is not callable" — in the collision system,
+                    # nowhere near the line that did it. Found by writing
+                    # examples/asteroids.py and losing a while to exactly that.
+                    if callable(getattr(c, name)) and not callable(value):
+                        raise AttributeError(
+                            f"'{name}' is a method that {type(c).__name__} "
+                            f"gives this object, so assigning to it would "
+                            f"break the component. Pick another name for your "
+                            f"own value — rock.{name}_value, or something "
+                            f"that says what it is."
+                        )
                     setattr(c, name, value)
                     return
         object.__setattr__(self, name, value)

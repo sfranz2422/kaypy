@@ -137,6 +137,28 @@ Only objects with `area()` collide at all. An object with `area()` *and*
 `body()` is solid; one with `area()` alone is a trigger you pass straight
 through — that's how a coin can be picked up while a wall stops you.
 
+**Turning, and going the way you point.** `rotate()` gives an object an
+`angle`; `Vec2.fromAngle()` turns that angle back into a direction, which is
+what "thrust forward" means once a thing can face anywhere.
+
+```python
+ship = add([sprite("ship"), pos(center()), anchor("center"), rotate(0)])
+ship.vel = vec2(0, 0)
+
+onKeyDown("left",  lambda: ship.rotateBy(-200 * dt()))
+onKeyDown("right", lambda: ship.rotateBy(200 * dt()))
+onKeyDown("up",    lambda: setattr(ship, "vel",
+                                   ship.vel + Vec2.fromAngle(ship.angle) * 320 * dt()))
+```
+
+Rotation is about the anchor, so `anchor("center")` spins on the spot and the
+default top-left corner swings around it. The **collision box does not turn**
+— it stays the upright rectangle, which is what Kaplay does and what keeps a
+spinning asteroid's hitbox from growing and shrinking as it goes round.
+
+`examples/asteroids.py` is the whole thing: turning, thrust, momentum,
+screen-wrap and splitting rocks.
+
 **Gravity needs a world to fall in.**
 
 ```python
@@ -294,6 +316,7 @@ An `anims` entry looks like `{"run": {"from": 0, "to": 8, "speed": 12, "loop": T
 | `area()` | A collision box. Required on **both** objects for any collision. Adds `.isHovering()`. |
 | `body(isStatic=False, mass=1, jumpForce=800)` | Physics. Adds `.jump(force)`, `.isGrounded()`, `.onGround(fn)`, `.vel`. |
 | `anchor(name)` | What `pos()` points at: `"topleft"` (default), `"top"`, `"center"`, `"bot"`, `"botright"`, … |
+| `rotate(degrees)` | Turn it, clockwise, about its anchor. Adds `.angle`, `.rotateBy(n)`, `.rotateTo(n)`. |
 | `scale(x, y=None)` | Resize. Affects the collision box too. |
 | `color(r, g, b)` | Tint. |
 | `opacity(n)` | `0.0`–`1.0`. |
@@ -353,7 +376,8 @@ def build_game(): ...
 |------|-----------|
 | `width()`, `height()`, `center()` | The size of the screen, and its middle. |
 | `dt()` | Seconds since the last frame. |
-| `vec2(x, y)` | A vector. Supports `+`, `-`, `*`, `.len()`, `.unit()`. |
+| `vec2(x, y)` | A vector. Supports `+`, `-`, `*`, `.len()`, `.unit()`, `.dist()`. |
+| `Vec2.fromAngle(degrees)` | A unit vector pointing that way — which direction a rotated object faces. |
 | `rand(a, b)`, `randi(a, b)`, `choose(seq)` | Randomness. |
 | `mousePos()`, `toWorld(pos)` | Where the mouse is, on screen and in the world. |
 | `setCamPos(pos)`, `setCamScale(n)`, `shake(n)` | The camera. |
@@ -388,6 +412,7 @@ package, so clone the repo if you want to run them as they're written:
 | 11 | `lesson11_camera.py` | `setCamPos`, `fixed()` HUD |
 | 12 | `lesson12_sprite_atlas.py` | `loadSpriteAtlas` |
 | 13 | `lesson13_state_ai.py` | `state()` machines for enemy AI |
+| — | `asteroids.py` | `rotate()`, `Vec2.fromAngle()`, momentum, screen-wrap |
 
 ```bash
 git clone https://github.com/sfranz2422/kaypy

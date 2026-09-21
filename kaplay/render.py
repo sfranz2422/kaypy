@@ -38,8 +38,11 @@ class RenderSystem:
             surf = surf.copy()
             surf.set_alpha(max(0, min(255, int(op * 255))))
 
+        angle = obj.comp("rotate").angle if obj.has("rotate") else 0
+
         if obj.has("fixed"):
-            screen.blit(surf, (world_pos.x - offset_x, world_pos.y - offset_y))
+            _blit(screen, surf, angle, (offset_x, offset_y),
+                  (world_pos.x, world_pos.y))
         else:
             # Camera zoom scales both the surface and the anchor offset,
             # so the anchor point stays put on screen as you zoom.
@@ -48,11 +51,9 @@ class RenderSystem:
                 nh = max(int(surf.get_height() * camera.scale), 1)
                 surf = pygame.transform.scale(surf, (nw, nh))
             anchor_screen = camera.world_to_screen(world_pos)
-            screen_offset_x = offset_x * camera.scale
-            screen_offset_y = offset_y * camera.scale
-            screen.blit(
-                surf, (anchor_screen.x - screen_offset_x, anchor_screen.y - screen_offset_y)
-            )
+            _blit(screen, surf, angle,
+                  (offset_x * camera.scale, offset_y * camera.scale),
+                  (anchor_screen.x, anchor_screen.y))
 
     def _build_surface(self, obj, w, h):
         if obj.has("sprite"):
@@ -108,6 +109,44 @@ class RenderSystem:
             pygame.draw.rect(
                 screen, (0, 255, 0), pygame.Rect(tl.x, tl.y, w, h), width=1
             )
+
+
+def _blit(screen, surf, angle, pivot, at):
+    """Draw `surf` so that `pivot` lands on `at`, turned `angle` degrees.
+
+    `pivot` is a point inside the surface — the anchor — and `at` is where
+    that point belongs on screen. With no rotation this is one subtraction,
+    exactly what the code did before rotation existed.
+
+    With rotation it is the awkward bit, because `pygame.transform.rotate`
+    rotates about the surface's CENTRE and hands back a larger surface with
+    the image sitting inside it. Blitting that at the old top-left makes the
+    object drift in a circle as it turns — the classic symptom, and the
+    reason this is a named function rather than two inline lines.
+
+    So: rotate the offset from the centre to the pivot by the same angle,
+    and place the rotated surface's centre that far back from `at`. The
+    pivot then stays exactly put and the object turns about it.
+
+    Signs, which are easy to get backwards and are checked in
+    tests/test_rotate.py rather than reasoned about:
+
+      * `transform.rotate(surf, -angle)` — pygame turns a surface
+        anticlockwise for a positive angle, and kaypy's angle is clockwise.
+      * `Vector2.rotate(angle)` — a vector in screen coordinates, where y
+        points down, turns clockwise for a positive angle. Same direction as
+        the image, opposite sign, because one is measured in screen space
+        and the other in pygame's own.
+    """
+    if not angle:
+        screen.blit(surf, (at[0] - pivot[0], at[1] - pivot[1]))
+        return
+
+    rotated = pygame.transform.rotate(surf, -angle)
+    off = pygame.math.Vector2(pivot[0] - surf.get_width() / 2,
+                              pivot[1] - surf.get_height() / 2).rotate(angle)
+    screen.blit(rotated,
+                rotated.get_rect(center=(at[0] - off.x, at[1] - off.y)))
 
 
 def _is_drawable(obj):

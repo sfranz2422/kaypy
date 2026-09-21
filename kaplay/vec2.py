@@ -72,6 +72,22 @@ class Vec2:
             return Vec2(0, 0)
         return Vec2(self.x / length, self.y / length)
 
+    @classmethod
+    def fromAngle(cls, degrees):
+        """A unit vector pointing `degrees` clockwise from the +x axis.
+
+        The partner to `rotate()`: an object at `angle` is facing
+        `Vec2.fromAngle(obj.angle)`, so thrusting a ship forward is
+
+            player.move(Vec2.fromAngle(player.angle) * SPEED)
+
+        rather than trigonometry in the middle of a lesson. Clockwise for the
+        same reason rotate() is — the screen's y axis points down — and it is
+        the exact inverse of `.angle()`, which is checked in tests/test_rotate.py.
+        """
+        rad = math.radians(degrees)
+        return cls(math.cos(rad), math.sin(rad))
+
     def angle(self, other=None):
         if other is None:
             return math.degrees(math.atan2(self.y, self.x))

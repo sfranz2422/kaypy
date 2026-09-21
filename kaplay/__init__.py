@@ -15,7 +15,8 @@ from .comps.sprite import sprite
 from .comps.shapes import rect, circle, text
 from .comps.area import area
 from .comps.body import body
-from .comps.transform import anchor, scale, color, opacity, outline, z, fixed
+from .comps.transform import (anchor, scale, rotate, color, opacity, outline,
+                              z, fixed)
 from .comps.state import state
 from .comps.move import move, offscreen, tile
 from .callutil import register_or_decorate
@@ -26,12 +27,12 @@ __all__ = [
     "setGravity", "setBackground",
     "add", "get", "addLevel", "addKaboom",
     "pos", "sprite", "rect", "circle", "text", "area", "body",
-    "anchor", "scale", "color", "opacity", "outline", "z", "fixed",
+    "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
     "move", "offscreen", "tile", "state",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
     "wait", "loop",
     "scene", "go",
-    "width", "height", "center", "dt", "vec2",
+    "width", "height", "center", "dt", "vec2", "Vec2",
     "rand", "randi", "choose",
     "mousePos", "toWorld",
     "setCamPos", "setCamScale", "shake",

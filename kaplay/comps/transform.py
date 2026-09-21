@@ -1,5 +1,5 @@
-"""Small appearance/behavior components: anchor, scale, color, opacity,
-outline, z, fixed()."""
+"""Small appearance/behavior components: anchor, scale, rotate, color,
+opacity, outline, z, fixed()."""
 from ..gameobj import Comp
 from ..vec2 import Vec2, vec2
 
@@ -45,6 +45,42 @@ class ScaleComp(Comp):
 
 def scale(x=1, y=None):
     return ScaleComp(x, y)
+
+
+class RotateComp(Comp):
+    """rotate(degrees) — turn the object, clockwise, about its anchor.
+
+    Clockwise because the screen's y axis points down, so a positive angle
+    turns the way a clock does, which is what anyone drawing on a screen
+    expects. Asteroids is the reason this exists: a ship that cannot turn
+    is not a ship.
+
+    The **collision box does not turn with it**, deliberately. It stays the
+    upright rectangle the object would have had at angle 0, which is what
+    Kaplay does too. A rotating box whose hitbox rotated with it would grow
+    and shrink twice a revolution, so an asteroid spinning on the spot would
+    catch the player at some angles and not others — a bug nobody would ever
+    guess at from the symptom.
+    """
+
+    id = "rotate"
+
+    def __init__(self, angle=0):
+        self.angle = angle
+
+    def rotateBy(self, degrees):
+        """Turn by this much more. `obj.rotateBy(180 * dt())` in onUpdate."""
+        self.angle += degrees
+        return self.angle
+
+    def rotateTo(self, degrees):
+        """Face exactly this way."""
+        self.angle = degrees
+        return self.angle
+
+
+def rotate(angle=0):
+    return RotateComp(angle)
 
 
 class ColorComp(Comp):
