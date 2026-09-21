@@ -17,6 +17,20 @@ there was no rotate component and no `.angle` on an object.
 - `examples/asteroids.py`: turning, thrust, momentum, screen-wrap, splitting
   rocks.
 
+**`tween()` and thirty-one easing curves.** Change a value smoothly over
+time — `tween(start, end, seconds, setter, ease)` — on numbers, `vec2`
+positions or colour tuples. Returns a handle with `.then()`, `.cancel()`,
+`.finish()` and `.paused`, all Kaplay's own names.
+
+- `easings.easeOutBounce` and the rest, named `easeIn`/`easeOut`/`easeInOut`
+  for each of Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back, Elastic and
+  Bounce, plus `easings.linear`. Any function from 0–1 to 0–1 works too.
+- A tween lands **exactly** on its end value. An eased curve can return
+  0.9999999 at t=1, and a sprite that stops one pixel short of where it was
+  told to go is a bug nobody can see and everybody can feel.
+- A misspelled curve says which names exist rather than raising a bare
+  AttributeError about a module.
+
 **Assigning over a component's method is now refused.** `rock.size = 3` used
 to overwrite `circle()`'s `size()` method and kill the game later, in the
 collision system, with `'int' object is not callable` — nowhere near the line
@@ -34,6 +48,14 @@ against the real engine, fragments included, on a preamble that supplies the
 names they lean on. Nothing checked the README before: `test_guide_code.py`
 covers GUIDE.md and only its whole programs, and the README is almost all
 fragments and is the first thing anyone reads.
+
+`tests/test_tween.py`: 27 checks, driving frames by hand so a "half a second"
+tween takes no real time and the samples are exact. Every one asks what
+*arrived* — the values the setter got, whether it landed exactly, whether
+`.then()` really ran — because a tween that silently does nothing raises
+nothing at all. That is not hypothetical: the same feature in the old
+JavaScript bridge looked perfectly healthy while `.cancel()` cancelled
+nothing.
 
 `tests/test_rotate.py`: 32 checks. The direction and the pivot are measured
 rather than reasoned about — a marker pixel is drawn and the test asks where

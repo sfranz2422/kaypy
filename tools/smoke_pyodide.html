@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kaypy in Pyodide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; }
+
+  :root {
+    --ground: #f3f5f1;
+    --surface: #ffffff;
+    --line: #dde1d9;
+    --ink: #161a17;
+    --muted: #666d66;
+    --pass: #2f6b4f;
+    --fail: #a8321f;
+    --wait: #8a7b3f;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101310;
+      --surface: #191d19;
+      --line: #2b302b;
+      --ink: #e7eae6;
+      --muted: #949b93;
+      --pass: #6fbf93;
+      --fail: #e58570;
+      --wait: #d4bd72;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #101310;
+    --surface: #191d19;
+    --line: #2b302b;
+    --ink: #e7eae6;
+    --muted: #949b93;
+    --pass: #6fbf93;
+    --fail: #e58570;
+    --wait: #d4bd72;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 28px 44px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 22px; }
+
+  h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); max-width: 62ch; }
+  .lede code { font-family: var(--mono); font-size: 0.92em; }
+
+  .verdict {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--wait);
+    background: var(--surface);
+    padding: 14px 16px;
+    display: grid;
+    gap: 3px;
+  }
+  .verdict strong { font-size: 15px; }
+  .verdict p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .verdict[data-state="pass"] { border-left-color: var(--pass); }
+  .verdict[data-state="fail"] { border-left-color: var(--fail); }
+
+  ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  ol.steps li { background: var(--surface); padding: 11px 14px; display: grid; grid-template-columns: 2.1rem 1fr auto; gap: 10px; align-items: baseline; }
+  .n { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .what { display: grid; gap: 3px; min-width: 0; }
+  .what b { font-weight: 500; font-size: 14.5px; }
+  .note { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  .note.bad { color: var(--fail); }
+  .chip {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .chip[data-state="run"] { color: var(--wait); }
+  .chip[data-state="pass"] { color: var(--pass); }
+  .chip[data-state="fail"] { color: var(--fail); }
+
+  .stage { display: grid; gap: 8px; justify-items: center; }
+  canvas {
+    background: #000; border: 1px solid var(--line);
+    image-rendering: pixelated; max-width: 100%; height: auto;
+  }
+  .hint { font-size: 13px; color: var(--muted); text-align: center; margin: 0; }
+
+  footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
+  footer p { margin: 0 0 8px; }
+  footer p:last-child { margin-bottom: 0; }
+  footer code { font-family: var(--mono); font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>kaypy in Pyodide</h1>
+    <p class="lede">
+      Eight checks, in order, each gating the next: can a browser load
+      <code>pygame-ce</code>, install <code>kaypy</code> from PyPI, hand SDL a
+      canvas, and then actually run a game loop at a sensible frame rate. This is
+      the question PyIDE's engine swap rests on, so it gets answered by running
+      it rather than by reasoning about it.
+    </p>
+  </header>
+
+  <div class="verdict" id="verdict" data-state="run">
+    <strong id="verdict-line">Running…</strong>
+    <p id="verdict-note">Pyodide is about 10 MB. The first load takes a few seconds.</p>
+  </div>
+
+  <ol class="steps" id="steps"></ol>
+
+  <div class="stage">
+    <canvas id="canvas" width="480" height="360" tabindex="0"></canvas>
+    <p class="hint">Click the picture, then use the arrow keys and space.</p>
+  </div>
+
+  <footer>
+    <p><strong>What is being run.</strong> A real kaypy game — gravity, a static
+      floor, a player with <code>body()</code> and <code>area()</code>, arrow keys
+      and a jump. No image files, so nothing here depends on how PyIDE will serve
+      its sprite packs; that is a separate question.</p>
+    <p><strong>Versions.</strong> Pyodide 314.0.7 carries pygame-ce 2.5.7 — the
+      same pygame-ce that pygbag supplies to kaypy's own web export, so the
+      browser build is one kaypy already targets.</p>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pyodide@314.0.7/pyodide.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var PKG_BASE = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/";
+  var NPM_BASE = "https://cdn.jsdelivr.net/npm/pyodide@314.0.7/";
+
+  var STEPS = [
+    ["Start Pyodide", "CPython 3.14 compiled to WebAssembly"],
+    ["Load pygame-ce", "from Pyodide's own package set, not PyPI"],
+    ["Install kaypy from PyPI", "pure Python, so micropip can fetch the wheel"],
+    ["Give SDL a canvas", "pyodide.canvas.setCanvas2D, on an element with id=canvas"],
+    ["pygame.display.set_mode", "the call that fails when there is no canvas"],
+    ["Run a kaypy game", "the script's top level, then run_async()"],
+    ["Advance frames", "three seconds of real time, then count them"],
+    ["Reach the keyboard", "arrow keys and space, into the canvas"]
+  ];
+
+  var list = document.getElementById("steps");
+  var rows = STEPS.map(function (s, i) {
+    var li = document.createElement("li");
+    li.innerHTML =
+      '<span class="n">' + String(i + 1) + '</span>' +
+      '<span class="what"><b></b><span class="note"></span></span>' +
+      '<span class="chip">waiting</span>';
+    li.querySelector("b").textContent = s[0];
+    li.querySelector(".note").textContent = s[1];
+    list.appendChild(li);
+    return li;
+  });
+
+  function mark(i, state, note, bad) {
+    var chip = rows[i].querySelector(".chip");
+    chip.dataset.state = state;
+    chip.textContent = state === "run" ? "running"
+                     : state === "pass" ? "ok" : "failed";
+    if (note !== undefined) {
+      var el = rows[i].querySelector(".note");
+      el.textContent = note;
+      el.classList.toggle("bad", !!bad);
+    }
+  }
+
+  function verdict(state, line, note) {
+    var box = document.getElementById("verdict");
+    box.dataset.state = state;
+    document.getElementById("verdict-line").textContent = line;
+    document.getElementById("verdict-note").textContent = note;
+  }
+
+  var GAME = [
+    "from kaplay import *",
+    "",
+    "kaplay(width=480, height=360, background=[24, 26, 34])",
+    "setGravity(2000)",
+    "",
+    "floor = add([rect(480, 24), pos(0, 336), color(70, 110, 80),",
+    "             area(), body(isStatic=True)])",
+    "",
+    "player = add([rect(26, 34), pos(60, 100), color(235, 200, 90),",
+    "              area(), body(), 'player'])",
+    "",
+    "coin = add([circle(9), pos(360, 300), color(240, 210, 110),",
+    "            area(), 'coin'])",
+    "",
+    "seen = {'frames': 0, 'key': '', 'hits': 0}",
+    "",
+    "",
+    "@onUpdate",
+    "def count():",
+    "    seen['frames'] = seen['frames'] + 1",
+    "",
+    "",
+    "def go_left():",
+    "    seen['key'] = 'left'",
+    "    player.move(-260, 0)",
+    "",
+    "",
+    "def go_right():",
+    "    seen['key'] = 'right'",
+    "    player.move(260, 0)",
+    "",
+    "",
+    "@onKeyPress('space')",
+    "def jump():",
+    "    seen['key'] = 'space'",
+    "    if player.isGrounded():",
+    "        player.jump(760)",
+    "",
+    "",
+    "onKeyDown('left', go_left)",
+    "onKeyDown('right', go_right)",
+    "",
+    "",
+    "@player.onCollide('coin')",
+    "def got(c):",
+    "    seen['hits'] = seen['hits'] + 1",
+    "    c.destroy()",
+    ""
+  ].join("\n");
+
+  function shorten(e) {
+    var s = String((e && e.message) || e);
+    var lines = s.trim().split("\n");
+    return lines[lines.length - 1].slice(0, 180);
+  }
+
+  (async function () {
+    var py, t0;
+
+    mark(0, "run");
+    t0 = performance.now();
+    try {
+      py = await loadPyodide({ indexURL: NPM_BASE, packageBaseUrl: PKG_BASE });
+    } catch (e) {
+      mark(0, "fail", shorten(e), true);
+      return verdict("fail", "Pyodide did not start",
+        "Everything below depends on this, so nothing else was tried.");
+    }
+    mark(0, "pass", "ready in " + Math.round(performance.now() - t0) + " ms");
+
+    // Pyodide's SDL support needs this opt-in: it is what lets a main loop
+    // hand control back to the browser instead of unwinding the stack.
+    try { py._api._skip_unwind_fatal_error = true; } catch (e) { /* older build */ }
+
+    var log = "";
+    py.setStdout({ batched: function (s) { log += s + "\n"; } });
+    py.setStderr({ batched: function (s) { log += s + "\n"; } });
+
+    mark(1, "run");
+    t0 = performance.now();
+    try {
+      await py.loadPackage("pygame-ce");
+      var ver = py.runPython("import pygame; pygame.version.ver");
+      mark(1, "pass", "pygame-ce " + ver + ", " +
+           Math.round(performance.now() - t0) + " ms");
+    } catch (e) {
+      mark(1, "fail", shorten(e), true);
+      return verdict("fail", "pygame-ce would not load",
+        "Without it there is no engine to run. It was fetched from " + PKG_BASE);
+    }
+
+    mark(2, "run");
+    t0 = performance.now();
+    try {
+      await py.loadPackage("micropip");
+      // deps=False on purpose: the only dependency is pygame-ce, already
+      // loaded above as a WebAssembly build. Left alone, micropip would go to
+      // PyPI for it and find no wheel it can use.
+      await py.runPythonAsync(
+        "import micropip\n" +
+        "await micropip.install('kaypy', deps=False)\n");
+      var kv = py.runPython("import importlib.metadata as m; m.version('kaypy')");
+      mark(2, "pass", "kaypy " + kv + " from PyPI, " +
+           Math.round(performance.now() - t0) + " ms");
+    } catch (e) {
+      mark(2, "fail", shorten(e), true);
+      return verdict("fail", "kaypy would not install",
+        "micropip could not fetch it from PyPI, or it needs something Pyodide " +
+        "has not got.");
+    }
+
+    mark(3, "run");
+    var canvas = document.getElementById("canvas");
+    try {
+      py.canvas.setCanvas2D(canvas);
+      mark(3, "pass", canvas.width + " by " + canvas.height);
+    } catch (e) {
+      mark(3, "fail", shorten(e), true);
+      return verdict("fail", "SDL has nowhere to draw",
+        "pyodide.canvas.setCanvas2D refused the canvas element.");
+    }
+
+    mark(4, "run");
+    try {
+      py.runPython(
+        "import pygame\n" +
+        "pygame.init()\n" +
+        "_probe = pygame.display.set_mode((480, 360))\n");
+      mark(4, "pass", "a display surface exists");
+    } catch (e) {
+      mark(4, "fail", shorten(e), true);
+      return verdict("fail", "pygame could not open a display",
+        "This is the call that needs a real canvas behind it.");
+    }
+
+    mark(5, "run");
+    try {
+      py.globals.set("GAME_SOURCE", GAME);
+      py.runPython(
+        "import sys, types\n" +
+        "mod = types.ModuleType('game')\n" +
+        "exec(compile(GAME_SOURCE, 'game.py', 'exec'), mod.__dict__)\n" +
+        "from kaplay.engine import current_engine\n" +
+        "_eng = current_engine()\n" +
+        "_seen = mod.__dict__['seen']\n");
+      // run_async is kaypy's own coroutine loop — the same entry point its
+      // pygbag build uses. Deliberately not awaited: it runs until the game
+      // ends, and the point is to watch it while it does.
+      py.runPythonAsync("await _eng.run_async()").catch(function (e) {
+        mark(5, "fail", shorten(e), true);
+      });
+      mark(5, "pass", "top level ran, loop started");
+    } catch (e) {
+      mark(5, "fail", shorten(e), true);
+      return verdict("fail", "The game did not start",
+        (log.trim().split("\n").pop() || "See the note above."));
+    }
+
+    mark(6, "run", "counting…");
+    var startFrames = py.runPython("_seen['frames']");
+    await new Promise(function (r) { setTimeout(r, 3000); });
+    var frames = py.runPython("_seen['frames']") - startFrames;
+    var fps = Math.round(frames / 3);
+    if (frames < 30) {
+      mark(6, "fail", frames + " frames in 3 s — the loop is not running", true);
+      return verdict("fail", "The loop does not advance",
+        "The engine started, but the browser never got control back.");
+    }
+    mark(6, "pass", frames + " frames in 3 s — about " + fps + " fps");
+
+    mark(7, "run", "press an arrow key or space, with the picture focused");
+    canvas.focus();
+    verdict("pass", "Running at about " + fps + " fps",
+      "Everything up to input has passed. Click the picture and press a key to " +
+      "finish the last check.");
+
+    var waited = 0;
+    var timer = setInterval(function () {
+      var key = py.runPython("_seen['key']");
+      waited += 500;
+      if (key) {
+        clearInterval(timer);
+        mark(7, "pass", "saw " + key);
+        verdict("pass", "It runs in the browser",
+          "pygame-ce loads, kaypy installs from PyPI, SDL draws to the canvas, " +
+          "the loop holds about " + fps + " fps, and the keyboard reaches it.");
+      } else if (waited >= 45000) {
+        clearInterval(timer);
+        mark(7, "fail", "no key seen — click the picture, then press one", true);
+      }
+    }, 500);
+  })();
+})();
+</script>
+
+</body>
+</html>

@@ -191,6 +191,32 @@ add([                     # the floor
 ])
 ```
 
+**Moving something smoothly is a tween.** You say where it starts, where it
+ends, how long it takes, and what to do with each value along the way.
+
+```python
+box = add([rect(60, 60), pos(100, 300), opacity(1)])
+
+
+def move_box(x):
+    box.pos.x = x
+
+
+tween(100, 600, 0.5, move_box, easings.easeOutBounce)
+tween(1.0, 0.0, 1.0, lambda a: setattr(box, "opacity", a)).then(
+    lambda: box.destroy())
+```
+
+Numbers, `vec2` positions and colour tuples all tween. The fifth argument is
+the **easing** — the shape of the motion — and without one everything travels
+at a flat, robotic pace. There are thirty-one, named `easeIn`, `easeOut` and
+`easeInOut` for each of Sine, Quad, Cubic, Quart, Quint, Expo, Circ, Back,
+Elastic and Bounce, plus `easings.linear` for none at all. Any function from
+0–1 to 0–1 works too.
+
+Unlike the events, `tween` is not a decorator: the function it takes is a
+setter that receives every value along the way, not a handler that runs once.
+
 **Whole levels are drawn as pictures made of characters.**
 
 ```python
@@ -413,6 +439,8 @@ def build_game(): ...
 | `mousePos()`, `toWorld(pos)` | Where the mouse is, on screen and in the world. |
 | `setCamPos(pos)`, `setCamScale(n)`, `shake(n)` | The camera. |
 | `play(name, loop=False, volume=1.0)` | Play a sound. Returns a handle with settable `.paused` and `.volume`. |
+| `tween(start, end, seconds, setter, ease)` | Change a value smoothly. Returns a handle with `.then()`, `.cancel()`, `.finish()`, `.paused`. |
+| `easings.easeOutBounce` | One of thirty-one curves — the shape of a tween's motion. |
 | `scene(name, fn)`, `go(name, *args)` | Define and switch screens. |
 | `debug.inspect = True` | Draw every collision box. **F1** toggles it while running. |
 

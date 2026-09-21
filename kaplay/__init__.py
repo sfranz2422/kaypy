@@ -6,6 +6,7 @@ only the language underneath (real, native Python, via pygame-ce) is new.
 from .vec2 import vec2, Vec2
 from .engine import Engine, current_engine, rand, randi, choose
 from .debugmod import debug
+from .easings import easings
 from .level import addLevel, Level
 from .kaboom import addKaboom
 
@@ -30,7 +31,7 @@ __all__ = [
     "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
     "move", "offscreen", "tile", "state",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
-    "wait", "loop",
+    "wait", "loop", "tween", "easings",
     "scene", "go",
     "width", "height", "center", "dt", "vec2", "Vec2",
     "rand", "randi", "choose",
@@ -120,6 +121,23 @@ def wait(seconds, fn=None):
 
 def loop(seconds, fn=None):
     return register_or_decorate(fn, lambda f: current_engine().timers.loop(seconds, f))
+
+
+def tween(start, end, duration, setter, ease=None):
+    """Change a value smoothly over time.
+
+        tween(100, 600, 0.5, lambda x: setattr(box.pos, "x", x))
+        tween(1.0, 0.0, 1.0, fade).then(lambda: print("gone"))
+        tween(box.pos, target, 0.8, move_box, easings.easeOutBounce)
+
+    Works on numbers, on vec2 positions and on colour tuples. The fifth
+    argument is the shape of the motion — see `easings`; without one it moves
+    at a flat rate, which is the one motion that looks like nothing.
+
+    Not a decorator, unlike the events: the function it takes is a setter that
+    receives each value along the way, not a handler that runs once.
+    """
+    return current_engine().timers.tween(start, end, duration, setter, ease)
 
 
 # ---- scenes -----------------------------------------------------------------
