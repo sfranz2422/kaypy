@@ -1,5 +1,9 @@
 # kaypy
 
+[![PyPI](https://img.shields.io/pypi/v/kaypy.svg)](https://pypi.org/project/kaypy/)
+[![Python versions](https://img.shields.io/pypi/pyversions/kaypy.svg)](https://pypi.org/project/kaypy/)
+[![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 **A real-Python game engine with [KAPLAY](https://kaplayjs.com)'s API — runs on your
 machine, exports to the browser.**
 
@@ -9,9 +13,34 @@ KAPLAY's documentation and every KAPLAY example on the internet still tells you
 what to write — you just write it in Python.
 
 Nothing is transpiled and nothing runs through a JavaScript bridge. It's
-[pygame-ce](https://pyga.me) underneath, all the way down. The same script runs
-as a desktop window with `python game.py`, or as a web page with
-`python webbuild.py game.py`.
+[pygame-ce](https://pyga.me) underneath, all the way down. The same file runs as
+a desktop window with `python game.py`, or as a web page with `kaypy web
+game.py`.
+
+## Get running
+
+```bash
+pip install kaypy
+kaypy new mygame
+cd mygame
+python game.py
+```
+
+Four commands and you have a game on screen — `kaypy new` writes a working
+`game.py` along with the sprites and sounds to build on, so there is nothing to
+download and no paths to fix. Arrow keys to move, space to jump. Then open
+`game.py` and start changing it.
+
+Put the same file on the web with:
+
+```bash
+pip install "kaypy[web]"
+kaypy web game.py
+```
+
+which builds it to WebAssembly and serves it at a URL you can open. The finished
+folder is a plain static site — upload it to itch.io, GitHub Pages or anywhere
+else.
 
 **New here?** [`GUIDE.md`](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md) is a thirteen-lesson course that starts from
 nothing and ends with a state-machine enemy AI — the Learn Kaplay lessons,
@@ -150,42 +179,36 @@ go("gameover", player_score)
 
 ---
 
-## Installation
+## Installing
 
 ```bash
-pip install kaypy
-kaypy new mygame
-cd mygame
-python game.py
+pip install kaypy            # the engine
+pip install "kaypy[web]"     # ...and the web exporter
 ```
 
-`kaypy new` writes a working game and the sprites and sounds to build on, so
-there's nothing to download and no paths to fix. `pygame-ce` is the only
-dependency. Python 3.10 or newer.
+Python 3.10 or newer. `pygame-ce` is the only runtime dependency; the `[web]`
+extra adds `pygbag` and a bundled `ffmpeg` used to convert sounds for the
+browser. The quotes matter on the second one — zsh reads a bare `[web]` as a
+glob pattern and will tell you there are no matches.
 
-Add the web exporter with:
+`pip install kaypy` gives you two things: the `kaplay` package to import, and a
+`kaypy` command with two subcommands.
 
-```bash
-pip install "kaypy[web]"   # the quotes matter; zsh reads a bare [web] as a glob
-```
+| Command | What it does |
+|---------|--------------|
+| `kaypy new mygame` | Make a folder with a working game and all the lesson assets |
+| `kaypy web game.py` | Build that game for the browser and serve it |
 
-Working from a checkout instead? `pip install -e .` and use `python webbuild.py`
-wherever this README says `kaypy web`.
+**Working from a clone instead?** `pip install -e .` from the project root, and
+use `python webbuild.py game.py` wherever this README says `kaypy web game.py` —
+they run the same code.
 
 ---
 
-## Running your game
-
-**On your machine:**
+## Putting a game on the web
 
 ```bash
-python game.py
-```
-
-**In a browser:**
-
-```bash
-kaypy web game.py          # or: python webbuild.py game.py, from a checkout
+kaypy web game.py          # or: python webbuild.py game.py, from a clone
 ```
 
 One command. It reads your script to find the images and sounds it loads,
@@ -204,6 +227,10 @@ static host.
 
 The first web build downloads a WebAssembly Python runtime, so it needs
 ordinary internet access. After that it's local.
+
+Your game file doesn't change between the two targets — no `if` on the
+platform, no separate build of your code. The same `game.py` that opens a window
+with `python game.py` is the one that becomes the web page.
 
 ---
 
@@ -327,7 +354,9 @@ plus whatever its components added.
 
 ## Examples
 
-All 13 lessons of the guide this was built against live in `examples/`:
+All 13 lessons of [the guide](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md)
+live in `examples/` **in this repository** — they aren't part of the pip
+package, so clone the repo if you want to run them as they're written:
 
 | # | Lesson | Shows |
 |---|--------|-------|
@@ -344,12 +373,15 @@ All 13 lessons of the guide this was built against live in `examples/`:
 | 12 | `lesson12_sprite_atlas.py` | `loadSpriteAtlas` |
 | 13 | `lesson13_state_ai.py` | `state()` machines for enemy AI |
 
-Run any of them from inside `examples/`:
-
 ```bash
-cd examples
+git clone https://github.com/sfranz2422/kaypy
+cd kaypy/examples
 python lesson10_levels.py
 ```
+
+If you installed from pip instead, `kaypy new mygame` gives you every asset
+those lessons use, so you can follow the guide by typing its code into your own
+`game.py`.
 
 ---
 
