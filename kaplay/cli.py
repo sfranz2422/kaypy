@@ -34,16 +34,22 @@ SOUND_TIMEOUT = 30
 
 
 def _sound_refs():
-    """Which tag to fetch from: the installed version's, else the main branch.
+    """Which refs to fetch from, most specific first.
 
-    Pinning to the release means an old kaypy keeps fetching the assets it was
-    published with, rather than whatever main happens to hold. Until releases
-    are tagged, the first URL 404s and it falls through to main — which is why
-    both are tried rather than one being chosen up front.
+    Pinning to the release tag means an old kaypy keeps fetching the assets it
+    was published with, rather than whatever main happens to hold. Both `v0.2.0`
+    and `0.2.0` are tried because the tag is whatever the GitHub release is
+    called, and the publish workflow accepts either — it compares
+    `${GITHUB_REF_NAME#v}` against pyproject's version, so the `v` is optional
+    there and would be easy to leave off here by accident.
+
+    `main` is last, and is what actually answers today for a version whose tag
+    does not exist. A miss costs one 404 and nothing else.
     """
     try:
         from importlib.metadata import version
-        return ["v" + version("kaypy"), "main"]
+        v = version("kaypy")
+        return ["v" + v, v, "main"]
     except Exception:
         return ["main"]
 

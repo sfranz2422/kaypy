@@ -3,6 +3,7 @@
 # travel with it. (The wheel stays lean: it gets kaplay/ and nothing else.)
 include LICENSE
 include README.md
+include CHANGELOG.md
 include GUIDE.md
 include DEVELOPING.md
 include webbuild.py
