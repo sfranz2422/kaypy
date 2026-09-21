@@ -55,6 +55,17 @@ kaypy = "kaplay.cli:main"
 include = ["kaplay*"]
 
 [tool.setuptools.package-data]
-# The starter game and its sprites/sounds ship inside the package, so
-# `kaypy new mygame` can produce something that runs without a checkout.
-"kaplay.starter" = ["*.py", "*.png", "*.md", "images/*", "dungeon/*", "sounds/*"]
+# The starter game and its sprites ship inside the package, so `kaypy new
+# mygame` produces something that runs without a checkout and without a
+# network. The sounds do NOT: they are 2.6 MB against the engine's 92 KB, and
+# only one lesson plays audio, so `kaypy new` fetches them (see kaplay/cli.py)
+# and every install that never needs them stops paying for them.
+"kaplay.starter" = ["*.py", "*.png", "*.md", "images/*", "dungeon/*"]
+
+[tool.setuptools.exclude-package-data]
+# Belt and braces. Narrowing package-data above is not enough on its own:
+# include-package-data is on by default, so anything MANIFEST.in sweeps up
+# lands in the wheel regardless of package-data. This is what actually keeps
+# the sounds out, and it keeps them out even if a copy reappears under
+# kaplay/starter/ one day.
+"kaplay.starter" = ["sounds/*"]

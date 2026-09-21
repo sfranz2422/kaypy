@@ -9,5 +9,9 @@ include webbuild.py
 recursive-include examples *.py *.png *.wav *.md
 recursive-include tests *.py
 recursive-include kaplay/starter *
+# examples/sounds is the one copy of the lesson audio in this repo, and it is
+# what `kaypy new` fetches. kaplay/starter/sounds was a byte-identical second
+# copy; it is pruned here so neither the sdist nor the wheel carries it.
+prune kaplay/starter/sounds
 global-exclude __pycache__ *.pyc
 prune web_build

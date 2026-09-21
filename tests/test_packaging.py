@@ -23,7 +23,12 @@ sys.path.insert(0, str(REPO_ROOT))
 
 STARTER = REPO_ROOT / "kaplay" / "starter"
 EXAMPLES = REPO_ROOT / "examples"
-ASSET_DIRS = ["images", "dungeon", "sounds"]
+
+# The sounds are deliberately not here: they are 2.6 MB against the engine's
+# 92 KB, only one lesson plays audio, and every `pip install kaypy` was paying
+# for them. `kaypy new` fetches them instead — tests/test_starter_sounds.py
+# covers that, including what happens when the fetch fails.
+ASSET_DIRS = ["images", "dungeon"]
 
 
 # --- 1. the bundled copy matches the lessons' copy ----------------------
@@ -51,6 +56,20 @@ assert not missing, (
 assert not mismatched, (
     f"kaplay/starter/ has drifted from examples/: {mismatched} — the copy "
     f"students get is no longer the copy the lessons were checked against"
+)
+
+# The sounds are not bundled, so the thing that can drift is the LIST of them
+# in the CLI: fetching a name that examples/sounds hasn't got would fail at a
+# student's machine and nowhere else.
+from kaplay import cli                                        # noqa: E402
+
+on_disk = {p.name for p in (EXAMPLES / "sounds").glob("*.wav")}
+assert set(cli.SOUNDS) == on_disk, (
+    f"kaypy new fetches {sorted(cli.SOUNDS)} but examples/sounds holds "
+    f"{sorted(on_disk)} — one of the two has moved on without the other"
+)
+assert not (STARTER / "sounds").exists(), (
+    "kaplay/starter/sounds is back — that is 2.6 MB inside every wheel again"
 )
 print(f"confirmed: kaplay/starter assets match examples/ ({len(ASSET_DIRS)} folders + atlas)")
 

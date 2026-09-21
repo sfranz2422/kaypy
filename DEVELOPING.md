@@ -315,6 +315,47 @@ that depends on 2.5.8-specific behaviour will diverge in the browser.
 
 ---
 
+## Why the sounds are fetched, not shipped
+
+The wheel was 1.36 MB. Of that, 92 KB was the engine and 2.6 MB uncompressed
+was three `.wav` files, mostly one `background.wav`. Every `pip install kaypy`
+anywhere paid for audio that exactly one lesson plays. They were also in the
+repo twice — `kaplay/starter/sounds/` and `examples/sounds/`, byte for byte
+identical.
+
+So `examples/sounds/` is now the one copy, `kaypy new` fetches from it over
+raw.githubusercontent.com, and the wheel is **112 KB**.
+
+What had to stay true, and is checked in `tests/test_starter_sounds.py`:
+
+- everything needed to *run* still ships — the starter game, every sprite, the
+  dungeon atlas — so `kaypy new` works with no network at all;
+- the starter game plays no sound, so a failed fetch costs a student nothing
+  until Lesson 8;
+- a failed fetch prints a sentence they can act on and still leaves a game that
+  runs, rather than a traceback;
+- files are written to `.part` and moved into place, because a half-written wav
+  that looks like a real file is worse than no file — the next run would skip
+  it;
+- a second run downloads nothing.
+
+Two packaging traps worth knowing, both found by building the wheel and looking
+inside it rather than by reading the config:
+
+- **Narrowing `package-data` is not enough.** `include-package-data` is on by
+  default, so anything `MANIFEST.in` sweeps up lands in the wheel regardless.
+  The wheel came out at 1366 KB with the sounds still in it. What actually
+  works is `exclude-package-data`, plus a `prune` in `MANIFEST.in`.
+- **A clone is not an install.** `kaypy new` copies `starter/` wholesale, so a
+  working copy that still has a stale `starter/sounds/` would go on shipping it
+  to students. `cmd_new` ignores that name explicitly.
+
+The fetch is pinned to the release tag (`v0.1.1`) and falls back to `main`,
+which is what it uses today because there are no tags yet. Tagging releases
+makes an old install keep fetching the assets it was published with.
+
+---
+
 ## Known limitations
 
 - **No tile-based pathfinding.** `tile(isObstacle=True)` is stored (Lesson 12)

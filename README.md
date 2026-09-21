@@ -27,9 +27,15 @@ python game.py
 ```
 
 Four commands and you have a game on screen — `kaypy new` writes a working
-`game.py` along with the sprites and sounds to build on, so there is nothing to
-download and no paths to fix. Arrow keys to move, space to jump. Then open
-`game.py` and start changing it.
+`game.py` along with the sprites to build on, so there is nothing to hunt for
+and no paths to fix. Arrow keys to move, space to jump. Then open `game.py` and
+start changing it.
+
+It also fetches the three lesson sounds, which are 2.6 MB and live outside the
+package so that every install doesn't pay for audio one lesson plays. If that
+fetch fails — no internet, a school network that blocks GitHub — you get a
+sentence saying so and a game that still runs, because the starter game plays
+no sound. `kaypy sounds mygame` picks them up whenever you like.
 
 Put the same file on the web with:
 
@@ -196,7 +202,8 @@ glob pattern and will tell you there are no matches.
 
 | Command | What it does |
 |---------|--------------|
-| `kaypy new mygame` | Make a folder with a working game and all the lesson assets |
+| `kaypy new mygame` | Make a folder with a working game and the lesson sprites |
+| `kaypy sounds mygame` | Fetch the lesson sounds into a folder that hasn't got them |
 | `kaypy web game.py` | Build that game for the browser and serve it |
 
 **Working from a clone instead?** `pip install -e .` from the project root, and
@@ -380,8 +387,8 @@ python lesson10_levels.py
 ```
 
 If you installed from pip instead, `kaypy new mygame` gives you every asset
-those lessons use, so you can follow the guide by typing its code into your own
-`game.py`.
+those lessons use — sprites from the package, sounds fetched on the spot — so
+you can follow the guide by typing its code into your own `game.py`.
 
 ---
 
