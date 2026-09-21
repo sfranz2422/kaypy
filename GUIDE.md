@@ -62,8 +62,9 @@ To turn the same file into a web page instead:
 kaypy web game.py
 ```
 
-That builds it and prints a URL to open. Click the page once so the keys reach
-the game, exactly as in PyIDE.
+That gives you one HTML file. Double-click it and the game plays — no server,
+nothing to install. It is also the file you upload to itch.io if you want to
+put the game somewhere other people can play it.
 
 **There is no `run()` call anywhere in this guide**, either way. The loop starts
 on its own once your file has finished being read.

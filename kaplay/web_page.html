@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<!--
+  A kaypy game, as one file.
+
+  Everything the game needs is in this document: the engine, the program, and
+  every picture and sound it loads. Nothing is fetched except Python itself.
+  Open it by double-clicking; no server, no install.
+
+  HOW IT FITS IN ONE FILE
+
+  Below are four JavaScript strings — the engine as JSON, the assets as
+  base64, the program, and the page's own boot code. Pyodide brings a Python
+  interpreter AND an in-memory filesystem, so the boot code writes those
+  strings into that filesystem as real files. By the time the program runs
+  there is a package on sys.path and a directory of PNGs, none of which exist
+  on any disk. `import kaplay` is an ordinary import and
+  `pygame.image.load("images/bean.png")` opens an ordinary file.
+
+  That is why the program below is byte for byte what was written. Nothing is
+  rewritten to point at inlined data, because the data is already sitting at
+  the path the program names.
+
+  WHAT IS NOT IN HERE
+
+  Pyodide and pygame-ce, both from a CDN. So the first run needs the internet
+  and takes a few seconds; the browser caches them afterwards. pygame-ce could
+  not be embedded even in principle — it is a compiled C extension and has to
+  be the interpreter's own build of it.
+-->
+<style>
+  :root {
+    --bg: #12121a; --fg: #e8e8f0; --dim: #9aa0b0;
+    --err-fg: #ffb4b4; --err-bg: #1c1420;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+               font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+  body { display: flex; align-items: center; justify-content: center; }
+  #wrap { text-align: center; padding: 16px; max-width: 100%; }
+  canvas { max-width: 100%; max-height: 90vh; background: #000;
+           border-radius: 6px; image-rendering: pixelated; }
+  #status { padding: 24px; color: var(--dim); }
+  /* Only ever shown when the game has actually failed. Nothing else appears
+     below the canvas — a published game should be the game and nothing else.
+     See the note by setStdout() for where print() goes instead. */
+  #error { display: none; white-space: pre-wrap; text-align: left;
+           margin: 16px auto 0; padding: 16px; border-radius: 6px;
+           font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+           color: var(--err-fg); background: var(--err-bg);
+           max-width: 90vw; max-height: 40vh; overflow: auto; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="status">Starting Python… (a few seconds the first time)</div>
+  <!-- The id must be exactly "canvas": Pyodide's SDL support looks the element
+       up by that name, and the pygame.display.set_mode() inside kaplay() fails
+       without it. -->
+  <canvas id="canvas" width="__WIDTH__" height="__HEIGHT__" hidden></canvas>
+  <pre id="error"></pre>
+</div>
+
+<script src="__PYODIDE__pyodide.js"></script>
+<script>
+var ENGINE = __ENGINE__;
+var ASSETS = __ASSETS__;
+var PROGRAM = __PROGRAM__;
+
+var LIB = "/lib";                 // where the engine goes
+var PROJECT = "/project";         // the game's working directory
+
+var statusEl = document.getElementById("status");
+var errorEl = document.getElementById("error");
+var canvas = document.getElementById("canvas");
+
+function fail(message) {
+  statusEl.hidden = true;
+  errorEl.style.display = "block";
+  errorEl.textContent += message;
+}
+
+function writeFile(py, path, contents) {
+  py.FS.mkdirTree(path.slice(0, path.lastIndexOf("/")));
+  py.FS.writeFile(path, contents);
+}
+
+function decode(b64) {
+  var binary = atob(b64);
+  var out = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+(async function () {
+  try {
+    var py = await loadPyodide({ indexURL: "__PYODIDE__" });
+
+    // Set before anything runs. An error inside a handler arrives long after
+    // the program finished, so this shows whatever turns up whenever it turns
+    // up rather than checking once and never looking again.
+    py.setStderr({ batched: function (s) { fail(s + "\n"); } });
+
+    // print() goes to the browser's console, not onto the page.
+    //
+    // A published game should be the game. Anything drawn below the canvas
+    // shows up inside the iframe on itch.io and everywhere else that hosts a
+    // single HTML file, and the first thing it would have shown is not even
+    // the game's doing: `import pygame` greets stdout with its version and
+    // SDL build every time, so every exported game opened with a grey box
+    // under it reading "pygame-ce 2.5.8 (SDL 2.32.10, Python 3.13)".
+    //
+    // Nothing is lost. Whoever wants print() output is debugging, and a
+    // developer console is where they are already looking.
+    py.setStdout({ batched: function (s) { console.log(s); } });
+
+    statusEl.textContent = "Loading the game engine…";
+    // Pyodide's own build. pygame-ce is a compiled C extension, so it cannot
+    // come from PyPI — micropip could not install it here even if it tried.
+    await py.loadPackage("pygame-ce");
+
+    statusEl.textContent = "Unpacking…";
+    Object.keys(ENGINE).forEach(function (rel) {
+      writeFile(py, LIB + "/kaplay/" + rel, ENGINE[rel]);
+    });
+
+    // The assets land at exactly the paths the program names, under the
+    // directory it is run from. Nothing in the program is rewritten.
+    Object.keys(ASSETS).forEach(function (path) {
+      writeFile(py, PROJECT + "/" + path, decode(ASSETS[path]));
+    });
+
+    py.runPython(
+      "import sys, os\n" +
+      "if " + JSON.stringify(LIB) + " not in sys.path:\n" +
+      "    sys.path.insert(0, " + JSON.stringify(LIB) + ")\n" +
+      "os.makedirs(" + JSON.stringify(PROJECT) + ", exist_ok=True)\n" +
+      "os.chdir(" + JSON.stringify(PROJECT) + ")\n" +
+      // Their own .py files next to the game are importable, which is what
+      // makes a two-file game work. chdir alone would not do it: Python
+      // searches sys.path, not the working directory.
+      "if " + JSON.stringify(PROJECT) + " not in sys.path:\n" +
+      "    sys.path.insert(0, " + JSON.stringify(PROJECT) + ")\n" +
+      // No __pycache__. A stale .pyc in a virtual filesystem is a miserable
+      // thing to debug and nobody can see the directory to clear it.
+      "sys.dont_write_bytecode = True\n"
+    );
+
+    // Pyodide's opt-in for SDL: without it, a main loop that hands control
+    // back to the browser each frame is treated as a fatal unwind. Documented
+    // as experimental, and it is what makes a frame loop possible at all.
+    try { py._api._skip_unwind_fatal_error = true; } catch (e) { /* older */ }
+    if (py.canvas && py.canvas.setCanvas2D) py.canvas.setCanvas2D(canvas);
+
+    canvas.hidden = false;
+    statusEl.hidden = true;
+
+    // Two steps, so a mistake in the setup is reported as a mistake in the
+    // setup rather than arriving tangled up in the frame loop. Both live in
+    // kaplay/webrun.py, which shipped inside ENGINE above.
+    py.globals.set("_kaypy_source", PROGRAM);
+    var status = py.runPython(
+      "from kaplay import webrun\n" +
+      "webrun.run(_kaypy_source)\n"
+    );
+    if (status === "ok") {
+      await py.runPythonAsync("await webrun.drive()");
+    }
+  } catch (e) {
+    fail(String((e && e.message) || e));
+  }
+})();
+</script>
+</body>
+</html>

@@ -40,13 +40,12 @@ no sound. `kaypy sounds mygame` picks them up whenever you like.
 Put the same file on the web with:
 
 ```bash
-pip install "kaypy[web]"
 kaypy web game.py
 ```
 
-which builds it to WebAssembly and serves it at a URL you can open. The finished
-folder is a plain static site — upload it to itch.io, GitHub Pages or anywhere
-else.
+which builds it into **one HTML file**. Double-click that file and the game
+plays — no server, nothing installed, nothing unzipped. Upload the same single
+file to itch.io, email it, or drop it on a school share.
 
 **New here?** [`GUIDE.md`](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md) is a thirteen-lesson course that starts from
 nothing and ends with a state-machine enemy AI — the Learn Kaplay lessons,
@@ -267,23 +266,21 @@ go("gameover", player_score)
 ## Installing
 
 ```bash
-pip install kaypy            # the engine
-pip install "kaypy[web]"     # ...and the web exporter
+pip install kaypy
 ```
 
-Python 3.10 or newer. `pygame-ce` is the only runtime dependency; the `[web]`
-extra adds `pygbag` and a bundled `ffmpeg` used to convert sounds for the
-browser. The quotes matter on the second one — zsh reads a bare `[web]` as a
-glob pattern and will tell you there are no matches.
+Python 3.10 or newer, and `pygame-ce` is the only dependency. There is nothing
+else to install for the web export — it used to need `pygbag` and an `ffmpeg`
+to convert sounds, and needs neither now.
 
 `pip install kaypy` gives you two things: the `kaplay` package to import, and a
-`kaypy` command with two subcommands.
+`kaypy` command with three subcommands.
 
 | Command | What it does |
 |---------|--------------|
 | `kaypy new mygame` | Make a folder with a working game and the lesson sprites |
 | `kaypy sounds mygame` | Fetch the lesson sounds into a folder that hasn't got them |
-| `kaypy web game.py` | Build that game for the browser and serve it |
+| `kaypy web game.py` | Build that game into one playable HTML file |
 
 **Working from a clone instead?** `pip install -e .` from the project root, and
 use `python webbuild.py game.py` wherever this README says `kaypy web game.py` —
@@ -297,26 +294,41 @@ they run the same code.
 kaypy web game.py          # or: python webbuild.py game.py, from a clone
 ```
 
-One command. It reads your script to find the images and sounds it loads,
-packages them with the engine into WebAssembly, then serves the result and
-prints a URL to open. Ctrl-C stops the server; the finished site stays in
-`web_build/<name>/build/web/` and can be uploaded as-is to itch.io or any
-static host.
+One command, one file:
 
-**Open the URL it prints, exactly as printed — `127.0.0.1`, not `localhost`.**
-They are the same server, but pygbag treats a page served from
-`http://localhost:8…` as having a local mirror of its package CDN, and fetches
-the pygame WebAssembly wheel from your machine instead of from
-pygame-web.github.io. There is no such mirror, so that one file 404s and the
-game sits at "Loading, please wait ..." for ever — after everything else,
-including the whole Python interpreter, has loaded perfectly. Nothing is wrong
-with the build. `kaplay/webbuild.py`'s `serve()` has the details.
+```
+Built game.py as one file:
+    web_build/game.html
+    412 KB, including 3 assets
+```
+
+Double-click it and it plays. It reads your script to find the images and
+sounds it loads and carries those, and only those, inside the file — along
+with the engine and your program. There is nothing beside it to keep together,
+nothing to zip, and no server to start.
+
+To publish on itch.io: upload that one file, set **Kind of project** to
+*HTML*, and tick *This file will be played in the browser*. Their own
+instructions cover it — *"For simple projects that are self contained in a
+single `.html` file, you directly upload the file without zipping it."*
+
+**Your program goes in unchanged.** kaypy opens sprites as ordinary files, and
+the page gives it a filesystem to open them from, so `loadSprite("bean",
+"images/bean.png")` means the same thing in a built game as it does on your
+desktop. Open the built file in a text editor and your own code is in there,
+as you wrote it.
+
+**The one thing it fetches** is Python itself — Pyodide and pygame-ce, from a
+CDN, on the first run. So a built game wants an internet connection the first
+time it is opened and takes a few seconds to start; the browser caches both
+afterwards. Embedding them would make every game tens of megabytes.
 
 | Flag | Effect |
 |------|--------|
-| `--no-serve` | build, but don't start the local server |
-| `--no-build` | only assemble the folder |
-| `--port 9000` | serve on a different port (default 8000) |
+| `--serve` | also start a local server, for testing on a phone or another machine |
+| `--port 9000` | which port `--serve` uses (default 8000) |
+| `--title "..."` | the browser tab's title (default: the script's name) |
+| `--out FILE` | write somewhere other than `web_build/<name>.html` |
 | `--assets a b` | copy these too, for paths your script builds at runtime |
 | `--out DIR` | write somewhere other than `web_build/<script name>` |
 
@@ -535,11 +547,13 @@ there yet, and never overwrites a real file.
 
 [`DEVELOPING.md`](https://github.com/sfranz2422/kaypy/blob/main/DEVELOPING.md) has the architecture, the test suite, the
 known limitations, and the war stories — including the three real physics bugs
-and the four pygbag incompatibilities that had to be fixed to make the web
-export work at all.
+and the pygbag incompatibilities that the web export had to work around before
+it stopped using pygbag.
 
 ## Credits
 
 KAPLAY's API design, and its documentation, which this follows deliberately and
-closely. Built on [pygame-ce](https://pyga.me); the web export rides on
-[pygbag](https://github.com/pygame-web/pygbag).
+closely. Built on [pygame-ce](https://pyga.me); the web export runs on
+[Pyodide](https://pyodide.org). It was built on
+[pygbag](https://github.com/pygame-web/pygbag) first, which is what made a
+browser build possible at all while this was finding its feet.

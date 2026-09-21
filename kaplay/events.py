@@ -7,18 +7,25 @@ from .callutil import call_flexible
 _LETTERS = "abcdefghijklmnopqrstuvwxyz"
 _DIGITS = "0123456789"
 
-# Built lazily, on first use, rather than at module import time: native
-# pygame-ce's pygame.K_LEFT etc. are plain constants, available the moment
-# you `import pygame`, before pygame.init() ever runs — but pygbag's WASM
-# build of pygame apparently doesn't populate them until after init(), and
-# `import kaplay` reaches this module (via engine.py's `from .events import
-# EventManager`) well before a script's own kaplay() call gets to run
-# pygame.init(). Building the map eagerly here crashed every web export
-# with `AttributeError: module 'pygame' has no attribute 'K_LEFT'` before a
-# single line of the game script ran. resolve_key()/key_name() are only
-# ever called from on_key_down/on_key_press/on_key_release (registered
-# after kaplay() runs) or from the frame loop (which only starts after
-# kaplay() runs), so building on first call is always safe.
+# Built lazily, on first use, rather than at module import time.
+#
+# Native pygame-ce's pygame.K_LEFT and friends are plain constants, there the
+# moment you `import pygame` and before pygame.init() ever runs. A WASM build
+# of pygame need not be: one of them (pygbag 0.9.3's) did not populate them
+# until after init(). `import kaplay` reaches this module — via engine.py's
+# `from .events import EventManager` — long before a script's own kaplay()
+# call gets as far as pygame.init(), so building the map eagerly here crashed
+# every web export with `AttributeError: module 'pygame' has no attribute
+# 'K_LEFT'` before a single line of the game script ran.
+#
+# kaypy no longer builds through pygbag, and the browser build it uses now
+# does define them early. The laziness stays anyway: it costs nothing, it
+# makes the module's import order its own business rather than a property of
+# whichever WASM pygame is underneath, and tests/test_lazy_key_map.py holds
+# it. resolve_key()/key_name() are only ever called from
+# on_key_down/on_key_press/on_key_release (registered after kaplay() runs) or
+# from the frame loop (which only starts after kaplay() runs), so building on
+# first call is always safe.
 _KEY_MAP = None
 _REVERSE_KEY_MAP = None
 

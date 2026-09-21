@@ -1,5 +1,23 @@
-"""Standalone sanity script: proves kaypy survives pygbag's real (buggy)
-atexit replacement.
+"""kaplay() must not touch atexit in a browser.
+
+    python3 tests/test_web_platform_guard.py
+
+The rule outlives the reason it was written for. On the web, something else
+calls run_async() explicitly — kaplay/webrun.py — and an atexit handler in a
+tab whose interpreter never exits is a frame loop that never starts. So
+kaplay() checks the platform and skips atexit there, and this proves the check
+is really in the code path rather than in a comment about it.
+
+It proves it the harshest way available: under an atexit module where merely
+*calling* register() raises. That module is not hypothetical, and the rest of
+this docstring is why it is worth keeping now that kaypy no longer builds
+through pygbag at all. A test that says "we don't call this" is weak; a test
+that says "we don't call this, and here is a version of it that would explode
+if we did" is not.
+
+---
+
+Originally: proves kaypy survives pygbag's real (buggy) atexit replacement.
 
 pygbag 0.9.3 ships its own atexit module (support/cross/aio/atexit.py)
 that replaces sys.modules["atexit"] wholesale, and whose register()

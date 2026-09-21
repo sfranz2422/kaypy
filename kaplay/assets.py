@@ -101,12 +101,19 @@ class AssetManager:
 
     def loadSound(self, name, path):
         if sys.platform == "emscripten":
-            # Browsers' WASM SDL2-mixer build can't reliably decode most
-            # .wav/.mp3/.aiff encodings — pygbag's own --build step flags
-            # this (see tools/build_web.py, which converts each .wav it
-            # copies into a same-named .ogg via ffmpeg when available). If
-            # that sibling .ogg exists, prefer it silently, so scripts never
-            # need an if-web branch just to pick a sound file extension.
+            # If a sibling .ogg is sitting next to the .wav, prefer it in the
+            # browser, so a script never needs an if-web branch just to pick a
+            # file extension.
+            #
+            # Plain uncompressed PCM .wav — which is what every sound in the
+            # lessons is, and what most tools write by default — plays fine in
+            # the browser, so this is no longer something a game has to do.
+            # It used to be: the old pygbag build step rejected .wav outright,
+            # so `kaypy web` converted every one to .ogg with ffmpeg first.
+            # That is gone, along with the ffmpeg dependency. What remains is
+            # a preference, for the compressed formats that genuinely are
+            # chancy in a WASM SDL2-mixer (ADPCM, µ-law, mp3): put an .ogg
+            # beside the .wav and the browser quietly gets the better one.
             ogg_path = os.path.splitext(path)[0] + ".ogg"
             if os.path.isfile(ogg_path):
                 path = ogg_path

@@ -27,7 +27,7 @@ For how to *use* the engine, see [README.md](README.md).
   otherwise round away and make `isGrounded()` flicker.
 - **`kaplay/engine.py`** — the `Engine` singleton: window, clock, asset/event/
   timer managers, camera, and the frame loop. The loop is `asyncio`-shaped so
-  the same body drives both the native run and the pygbag web build.
+  the same body drives both the native run and the browser build.
 - **`kaplay/render.py`** — draws sprite/rect/circle/text in `z()` order,
   through the camera unless `fixed()`.
 
@@ -38,7 +38,7 @@ either. Natively, `kaplay()` registers the frame loop with `atexit`, so it
 starts the instant your script's top level finishes. `run()` is still exposed
 for tooling that wants to be explicit, and is a harmless no-op the second time.
 
-The web build can't use that trick (see *pygbag incompatibilities* below), so
+The web build can't use that trick (see *Web export* below), so
 `webbuild.py` generates a `main.py` that imports your script as a module —
 which runs its whole top level exactly once, same as atexit firing after it —
 and then awaits `run_async()` directly. Your game script is byte-for-byte the
@@ -55,7 +55,9 @@ Standalone scripts, run directly, using plain `assert`. They set
 python tests/test_core.py               # collision edge-triggering, child objects, scenes, state()
 python tests/test_physics.py            # gravity, grounding, mass-based pushing
 python tests/test_tile_floor_landing.py # landing on a tiled floor, at uneven frame rates
-python tests/test_web_platform_guard.py # kaplay() never touches pygbag's broken atexit
+python tests/test_web_platform_guard.py # kaplay() never touches atexit in a browser
+python tests/test_webrun.py             # running a game in a page, and trimming its tracebacks
+python tests/test_web_single_file.py    # `kaypy web` builds one file, and the game inside it runs
 python tests/test_lazy_key_map.py       # pygame.K_* is never read before pygame.init()
 python tests/test_decorators.py         # every event works as a callback AND as a decorator
 python tests/test_guide_code.py         # every program printed in GUIDE.md actually runs
@@ -160,12 +162,37 @@ decorator gain doesn't require giving it up.
 
 ---
 
-## Web export (pygbag)
+## Web export
 
-`webbuild.py` assembles a folder, converts audio, runs pygbag, and serves the
-result. Four separate incompatibilities had to be fixed before a page would run
-at all. Each one is cheap to re-break, so they're documented here with the
-evidence that found them.
+`kaplay/webbuild.py` builds **one HTML file**: it reads the game script to find
+the assets it names, base64s those, JSONs the engine, and fills all of it into
+`kaplay/web_page.html`. The page writes the engine and the assets into
+Pyodide's in-memory filesystem before running the program, so `import kaplay`
+is an ordinary import and `pygame.image.load("images/bean.png")` opens an
+ordinary file — which is why the program is carried byte for byte with no
+paths rewritten.
+
+The two halves of a run live in `kaplay/webrun.py`, not in the page: `run()`
+for the program's top level, `await drive()` for the frame loop. Real Python in
+a real module, so it can be tested and so a browser IDE embedding kaypy calls
+exactly the same code the page does.
+
+### It used to build through pygbag
+
+Until recently this ran pygbag, which produces a *folder* — an index.html that
+fetches a `.apk` archive at run time, plus a tarball and a favicon. That is
+fine when a web server is serving it and useless when someone double-clicks
+the index.html, because a `file://` page may not read the file beside it. A
+student could build their own game and not open it.
+
+Three dependencies went when pygbag did: pygbag itself, ffmpeg (its build step
+rejects `.wav` outright, so every sound had to be converted to `.ogg` first),
+and a build-time download of a WASM runtime from pygame-web.github.io.
+
+What is kept below is the four incompatibilities that had to be fixed to make
+a pygbag page run at all. Two of them turned into properties of the engine
+that are still worth having, and still tested; the other two are history, and
+are here because the same shapes recur in any WASM Python.
 
 ### 1. pygbag's `atexit` replacement is broken
 
@@ -291,26 +318,30 @@ above only get added when it's the one invoking it. Running
 `python -m pygbag --build <dir>` yourself afterwards skips them and puts you
 straight back on the broken defaults.
 
-### Audio: `.wav` → `.ogg`
+### Audio: `.wav` plays as it is
 
-Browsers' WASM audio can't reliably decode most `.wav` files, and pygbag's
-build step refuses to package one at all ("has a common unsupported format. Use
-OGG format instead."). `webbuild.py` converts every `.wav` it copies into a
-same-named `.ogg`, and `AssetManager.loadSound` prefers that sibling `.ogg`
-automatically whenever it detects the browser platform — so the game script
-still just says `loadSound("ding", "sounds/ding.wav")` with no if-web branch.
+It did not always. pygbag's build step refuses to package a `.wav` at all
+("has a common unsupported format. Use OGG format instead."), so the old
+`webbuild.py` converted every one it copied into a same-named `.ogg` — via
+`ffmpeg` if it was on PATH, otherwise a pip-installable `imageio-ffmpeg` whose
+wheel bundles a static binary. That was the only reason the web export had a
+dependency beyond kaypy itself.
 
-The conversion uses `ffmpeg` if it's on PATH, otherwise the `imageio-ffmpeg`
-package (pulled in by `pip install -e ".[web]"`), whose wheel bundles an actual
-static ffmpeg binary per platform — so no Homebrew or system package manager is
-ever required. Only if neither is available does it fall back to
-`--disable-sound-format-error` and warn.
+None of it is needed now. The lesson sounds, and anything most tools write,
+are uncompressed PCM `.wav`, which the browser decodes without complaint.
+Nothing is converted and nothing has to be installed.
 
-> A `soundfile`-only pure-Python fallback was tried first and rejected: its
-> bundled libsndfile OGG/Vorbis encoder **segfaulted silently** on a real
-> 22.05kHz mono `.wav`, writing a valid-looking but completely empty `.ogg`.
-> Every conversion now runs in a subprocess so an encoder crash can't take the
-> build down with it.
+`AssetManager.loadSound` still prefers a sibling `.ogg` over a `.wav` in the
+browser, which is now a convenience rather than a workaround: the formats that
+genuinely are chancy in a WASM SDL2-mixer are the compressed ones — ADPCM,
+µ-law, mp3 — so putting an `.ogg` beside the `.wav` quietly gets the better
+one, and a game script never needs an if-web branch to say so.
+
+> A `soundfile`-only pure-Python converter was tried during that era and
+> rejected: its bundled libsndfile OGG/Vorbis encoder **segfaulted silently**
+> on a real 22.05kHz mono `.wav`, writing a valid-looking but completely empty
+> `.ogg`. Worth remembering as a shape — an encoder that fails by producing
+> plausible output is worse than one that crashes.
 
 ### Frame pacing on the web
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kaypy"
-version = "0.3.0"
+version = "0.4.0"
 description = "A real-Python game engine with KAPLAY's component API, backed by pygame-ce, exporting to the browser."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,13 +35,11 @@ dependencies = [
     "pygame-ce==2.5.8",
 ]
 
-[project.optional-dependencies]
-# Only needed by `kaypy web` (the pygbag build), never at runtime.
-# imageio-ffmpeg is the .wav->.ogg converter that step falls back to when
-# ffmpeg isn't on PATH — its wheel bundles an actual static ffmpeg binary
-# per-platform, so plain `pip install` is enough; no Homebrew or other
-# system package manager needed.
-web = ["pygbag>=0.9", "imageio-ffmpeg>=0.5"]
+# No optional dependencies. `kaypy web` used to need two — pygbag to build
+# the page and ffmpeg (or imageio-ffmpeg) to convert every .wav to .ogg,
+# because pygbag's build step rejects .wav outright. It now writes the page
+# itself and carries the .wav unchanged, so `pip install kaypy` is the whole
+# install and a student with no ffmpeg is not a student who cannot publish.
 
 [project.urls]
 Homepage = "https://github.com/sfranz2422/kaypy"
@@ -55,6 +53,10 @@ kaypy = "kaplay.cli:main"
 include = ["kaplay*"]
 
 [tool.setuptools.package-data]
+# The page `kaypy web` builds from. It is data, not code, so it needs naming
+# here or a wheel would install an engine that cannot export anything — and
+# the failure would be at a student's machine, not at build time.
+"kaplay" = ["web_page.html"]
 # The starter game and its sprites ship inside the package, so `kaypy new
 # mygame` produces something that runs without a checkout and without a
 # network. The sounds do NOT: they are 2.6 MB against the engine's 92 KB, and

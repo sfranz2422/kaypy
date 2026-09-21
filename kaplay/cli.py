@@ -184,7 +184,7 @@ def main(argv=None) -> int:
     p_sounds.set_defaults(func=cmd_sounds)
 
     p_web = sub.add_parser(
-        "web", help="build a game as a web page and serve it",
+        "web", help="build a game as one self-contained HTML file",
         add_help=False,
     )
     p_web.add_argument("rest", nargs=argparse.REMAINDER,

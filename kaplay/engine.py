@@ -3,16 +3,25 @@ moment the rest of the script finishes running — there is no run() call
 anywhere in the Kaplay guide.
 
 On native CPython, atexit gets us this for free: kaplay() registers the
-frame loop and it fires once your script's top level finishes. Under
-pygbag (sys.platform == "emscripten"), that trick is unavailable — pygbag
-replaces the stdlib atexit module with its own (support/cross/aio/atexit.py
-in pygbag 0.9.3), and that replacement has a real bug (register() closes
-over an undefined `arg` instead of `args`), so calling atexit.register()
-there raises NameError immediately. We detect that platform and skip
-atexit entirely; the web build's auto-generated main.py wrapper (see
-tools/build_web.py) imports your script as a module — which runs its
-whole top level, exactly like atexit firing after it — and then calls
-run_async() explicitly itself, the way every pygbag example does."""
+frame loop and it fires once your script's top level finishes.
+
+In a browser (sys.platform == "emscripten") that trick is no use, and
+kaplay() skips atexit entirely there. Two reasons, either one sufficient.
+
+The plain one: a browser tab's Python interpreter does not exit, so an
+atexit handler is a frame loop that never starts.
+
+The historical one, kept because it explains why the check is a hard skip
+rather than a try/except: this used to run under pygbag, which replaced
+the stdlib atexit module with its own (support/cross/aio/atexit.py in
+0.9.3) whose register() closed over an undefined `arg` instead of `args`
+— so merely *calling* atexit.register() there raised NameError before
+the game had drawn a frame. tests/test_web_platform_guard.py still holds
+that line down.
+
+Whatever starts the game on the web calls run_async() explicitly
+instead. That is kaplay/webrun.py, which is what the page built by
+`kaypy web` calls, and what a browser IDE embedding kaypy calls too."""
 from __future__ import annotations
 import asyncio
 import sys

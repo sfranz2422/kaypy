@@ -112,16 +112,36 @@ assert (webbuild.KAPLAY_PKG / "engine.py").is_file(), (
 assert webbuild.KAPLAY_PKG.name == "kaplay", \
     f"expected the package directory, got {webbuild.KAPLAY_PKG}"
 
+# The page template is data, not code, so an install only has it because
+# pyproject.toml names it in package-data. Get that wrong and the wheel
+# installs an engine that cannot export anything — and the failure lands on a
+# student's machine at the moment they try to publish, not at build time.
+assert webbuild.PAGE_TEMPLATE.is_file(), (
+    f"no page template at {webbuild.PAGE_TEMPLATE} — `kaypy web` cannot build "
+    f"anything without it. Check package-data in pyproject.toml."
+)
+assert "__ENGINE__" in webbuild.PAGE_TEMPLATE.read_text(), \
+    "the page template has no __ENGINE__ slot to fill"
+
+engine = webbuild.engine_files()
+assert "engine.py" in engine and "webrun.py" in engine, \
+    f"the engine the page would carry is missing files: {sorted(engine)[:5]}"
+leaked = [name for name in engine if name.startswith("starter/")]
+assert not leaked, (
+    f"the starter assets went into the web build ({leaked[:3]}) — that's "
+    f"megabytes of sprites in every export, most of them unused"
+)
+
 with tempfile.TemporaryDirectory() as tmp:
-    out = Path(tmp) / "build"
-    webbuild.assemble(STARTER / "game.py", [], out)
-    assert (out / "kaplay" / "engine.py").is_file(), "engine missing from the build"
-    assert (out / "main.py").is_file(), "generated main.py missing from the build"
-    leaked = list((out / "kaplay").rglob("starter"))
-    assert not leaked, (
-        f"the starter assets were copied into the web build ({leaked}) — that's "
-        f"megabytes of sprites in every export, most of them unused"
-    )
-    print("confirmed: web builds use the installed engine, without the starter assets")
+    page, used = webbuild.build_page(STARTER / "game.py", [], "Starter")
+    out = Path(tmp) / "game.html"
+    out.write_text(page)
+    assert out.is_file() and page.startswith("<!doctype html>"), \
+        "the starter game did not build into a page"
+    assert "var ENGINE = {" in page, "the built page carries no engine"
+    print(f"confirmed: the starter builds to one file of "
+          f"{len(page) / 1024:.0f} KB, carrying {len(used)} asset(s)")
+
+print("confirmed: web builds use the installed engine, without the starter assets")
 
 print("ALL PACKAGING CHECKS PASSED")

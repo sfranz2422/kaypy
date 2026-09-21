@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+
+
+
+- **Your program is carried byte for byte.** The page writes the engine and
+  the assets into Pyodide's in-memory filesystem before running anything, so
+  `loadSprite("bean", "images/bean.png")` opens a real file at the path you
+  wrote. Nothing is rewritten to point at inlined data. Open a built game in a
+  text editor and your own code is in there as you typed it.
+- **Two dependencies went away**, and with them the separate install step the
+  web export used to need. `pip install kaypy` is now the whole thing: no
+  pygbag, and no ffmpeg. The ffmpeg was there only because pygbag's build step
+  rejects `.wav` files outright, so every sound had to be converted to `.ogg`
+  first. Plain PCM `.wav` — which is what the lesson sounds are, and what most
+  tools write — plays in the browser as it is.
+- **Nothing is downloaded at build time.** pygbag fetched a WASM runtime from
+  pygame-web.github.io to build with. Building now needs no network at all;
+  only *playing* a built game does, once, for Python itself.
+- **New: `kaplay/webrun.py`**, the two halves of a run — `run(source)` for the
+  program's top level and `await drive()` for the frame loop — plus traceback
+  trimming that drops asyncio, the standard library and the engine's own frames
+  so the first thing a student reads is their own line. It is a real module
+  rather than a string inside the page, so it is tested, and so a browser IDE
+  embedding kaypy runs a game the same way the built page does.
+- **Nothing is drawn below the game.** `print()` output goes to the browser's
+  developer console rather than onto the page, so a published game is the game.
+  The first thing the old pane showed was not even the game's doing: `import
+  pygame` greets stdout with its version every time, so every export opened
+  with a grey box under it reading "pygame-ce 2.5.8 (SDL 2.32.10, ...)". An
+  error still shows on the page, because a blank canvas that explains nothing
+  is worse than a red box that does.
+- **New: `kaplay/web_page.html`**, the page itself. Shipped as package data,
+  which means an editor that vendors kaypy can build exactly the same page
+  rather than keeping its own copy in step by hand.
+- `--serve` is now opt-in rather than automatic, since a built file opens on
+  its own. `--no-build` and `--no-serve` are gone with pygbag; `--title` and
+  `--out` are new.
+
+**Fixed: filling the page one slot at a time corrupted it.** The engine the
+page carries includes `webbuild.py`, whose own source contains the literal text
+`__ASSETS__` — it is the module that defines the slots. Substituting them in
+sequence put the engine in first and then replaced that mention too, halfway
+through a Python string inside a JSON string. The page still looked plausible
+and the JSON no longer parsed. Substitution is a single pass now, so what goes
+in is never looked at again.
+
+## 0.3.0
+
 **`rotate()` — things can turn.** Asteroids was not writable before this;
 there was no rotate component and no `.angle` on an object.
 

@@ -3,44 +3,63 @@
 
     kaypy web game.py          (or: python webbuild.py game.py, in a checkout)
 
-That is the whole thing. It works out which images and sounds the script
-uses by reading the script, copies them along with the engine, builds the
-WASM bundle, then serves it and prints a URL to open. That URL says
-127.0.0.1 and not localhost, which is not cosmetic — see serve() for the
-pygbag behaviour that makes the difference between a running game and a
-page stuck on "Loading, please wait ...". Ctrl-C stops the
-server; the built site stays on disk (web_build/<name>/build/web/) and can
-be uploaded as-is to itch.io or any static host.
+The result is **one HTML file**. Double-click it and the game plays: no
+server, nothing installed, nothing unzipped. Upload that single file to
+itch.io, email it, put it on a school share — it is the whole game.
+
+    kaypy web game.py
+    -> web_build/game.html   (420 KB, say)
+
+WHAT IS INSIDE IT
+
+The engine, the program, and every picture and sound the script names, all
+inlined. The script is read rather than run to work out which assets it uses,
+so nothing is carried that the game never loads.
+
+Pyodide brings a Python interpreter and an in-memory filesystem, so the page
+writes the engine and the assets into that filesystem as real files before the
+program starts. `import kaplay` is then an ordinary import and
+`pygame.image.load("images/bean.png")` opens an ordinary file — which is why
+the program goes in byte for byte, with no paths rewritten. The page itself is
+kaplay/web_page.html; it is worth reading if you want the details.
+
+THE ONE THING IT FETCHES
+
+Pyodide and pygame-ce, from a CDN, on first run. So the first load of a built
+game wants an internet connection and takes a few seconds while Python starts;
+the browser caches both afterwards. pygame-ce cannot be embedded even in
+principle — it is a compiled C extension and has to be the interpreter's own
+build of it.
+
+WHAT THIS REPLACED
+
+Until now this ran pygbag, which produces a *folder*: an index.html that
+fetches a .apk archive at run time, plus a tarball and a favicon. That works
+when a web server is serving it, and not at all when someone double-clicks the
+index.html, because a file:// page is not allowed to read the file next to it.
+So a student who built a game could not open their own game without first
+starting a web server.
+
+Three dependencies went with it: pygbag itself, ffmpeg (pygbag's build step
+rejects .wav outright, so every sound had to be converted to .ogg first), and
+a build-time download of a WASM runtime from pygame-web.github.io.
 
 Useful flags, none of them usually needed:
 
-    --no-serve      build, but don't start the local server afterwards
-    --no-build      only assemble the folder; print the pygbag command
-    --port 9000     serve on a different port (default: 8000)
-    --assets a b    copy these too, for files the script doesn't name
+    --serve         also start a local server and print a URL, for testing
+                    across a network or in a browser that dislikes file://
+    --port 9000     which port to serve on (default: 8000)
+    --assets a b    carry these too, for files the script doesn't name
                     outright (a path built at runtime, say)
-    --out DIR       write somewhere other than web_build/<script name>
-
-WHY A GENERATED main.py: pygbag needs an explicit `asyncio.run(...)` at
-the true top level of main.py — there's no way for it to auto-detect "the
-script's setup finished, start the loop" the way native Python's atexit
-lets kaypy do it. So this writes that one line into a separate, generated
-main.py that imports your actual game file as a module (which runs its
-whole top level — kaplay(), loadSprite(), add(), onKeyDown(), all of it,
-exactly once, same as atexit firing after it natively) and then awaits the
-engine's loop. Your lesson script itself stays byte-for-byte what the
-Kaplay guide shows: no run() call anywhere in it.
-
-The pygbag step downloads its CPython+SDL2-for-WASM runtime from
-pygame-web.github.io the first time. Somewhere with a locked-down outbound
-allowlist (a CI box, a sandboxed container) that fetch fails with a
-network error that has nothing to do with this script or with kaypy — run
-it from an ordinary machine with ordinary internet access instead.
+    --out FILE      write somewhere other than web_build/<name>.html
+    --title "..."   the browser tab's title (default: the script's name)
 """
 from __future__ import annotations
 import argparse
 import ast
-import shutil
+import base64
+import json
+import re
 import socket
 import subprocess
 import sys
@@ -50,54 +69,26 @@ from pathlib import Path
 # site-packages, not a repo checkout, which is why it is resolved from this
 # module rather than from a project directory.
 KAPLAY_PKG = Path(__file__).resolve().parent
+PAGE_TEMPLATE = KAPLAY_PKG / "web_page.html"
 
-# Everything the build produces goes under the directory the user is
-# standing in, for the same reason.
-def default_out_dir(stem: str) -> Path:
-    return Path.cwd() / "web_build" / stem
+PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/"
 
-# What counts as an asset worth copying when it shows up as a string in
-# the game script.
+# What counts as an asset worth carrying when it shows up as a string in the
+# game script.
 ASSET_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp",
     ".wav", ".ogg", ".mp3", ".flac",
     ".ttf", ".otf", ".json",
 }
 
-MAIN_PY_TEMPLATE = '''\
-# /// script
-# dependencies = [
-#     "pygame.base",
-# ]
-# ///
-"""Auto-generated by webbuild.py — do not hand-edit.
-Regenerate it instead if the source game file changes.
+# Files inside the package that the browser has no use for. `starter/` is what
+# `kaypy new` hands a desktop user and would otherwise add megabytes of sprites
+# to every build, whether or not the game loads any of them.
+SKIP_DIRS = {"starter", "__pycache__"}
 
-The PEP 723 block above is load-bearing, not decoration: pygbag's own
-in-browser bootstrap (pygbag/support/cpythonrc.py's preload_code(), which
-runs against exactly this file's source) only links in the *real*,
-compiled pygame WASM extension — the one with working pygame.init(),
-pygame.display, etc. — when it finds a dependency block naming
-"pygame.base". Without it, `import pygame` still succeeds (kaypy's own
-nested `import pygame` inside kaplay/engine.py is never even visible to
-pygbag's scanner, which only reads this top-level file, not what it
-imports), but you silently get a stub missing every real function —
-confirmed against a real build: it crashed with `AttributeError: module
-'pygame' has no attribute 'init'` at the exact line kaypy calls
-pygame.init(), and the in-browser boot log explicitly printed "# 696: no
-pep 723 block found" right before it. Every kaypy web export needs this,
-since the lesson script itself never writes `import pygame` — kaplay
-does that internally, invisibly to pygbag's scanner — so this generated
-wrapper is the only place that can declare it.
-"""
-import asyncio
 
-import {module_name}  # noqa: F401  (import runs the whole game script)
-
-from kaplay.engine import current_engine
-
-asyncio.run(current_engine().run_async())
-'''
+def default_out_file(stem: str) -> Path:
+    return Path.cwd() / "web_build" / (stem + ".html")
 
 
 # ---------------------------------------------------------------- assets
@@ -105,13 +96,13 @@ asyncio.run(current_engine().run_async())
 def find_assets(game_script: Path) -> list[str]:
     """Every asset the script names, as the script spells it.
 
-    Reads the file rather than running it, and picks up any string
-    literal that looks like an asset path — which covers loadSprite's
-    single path, its list-of-frames form, loadSpriteAtlas's sheet and
-    loadSound, without this needing to know about any of them. Paths are
-    kept exactly as written ("images/bean.png", not an absolute path),
-    because that spelling is what the script passes to loadSprite at
-    runtime, and the copy has to land where the script will look for it.
+    Reads the file rather than running it, and picks up any string literal
+    that looks like an asset path — which covers loadSprite's single path, its
+    list-of-frames form, loadSpriteAtlas's sheet and loadSound, without this
+    needing to know about any of them. Paths are kept exactly as written
+    ("images/bean.png", not an absolute path), because that spelling is what
+    the script passes to loadSprite at run time, and the copy has to land
+    where the script will look for it.
     """
     try:
         tree = ast.parse(game_script.read_text(), filename=str(game_script))
@@ -132,119 +123,129 @@ def find_assets(game_script: Path) -> list[str]:
             continue
         if ".." in Path(spelled).parts or Path(spelled).is_absolute():
             print(f"note: skipping {spelled} — only paths inside the script's own "
-                  f"folder can be copied; pass it with --assets if you need it")
+                  f"folder can be carried; pass it with --assets if you need it")
             continue
         found.append(spelled)
     return found
 
 
-# ------------------------------------------------------------ audio prep
+# ------------------------------------------------------------- the engine
 
-def _convert_via_ffmpeg(ffmpeg: str, wav_path: Path, ogg_path: Path) -> bool:
-    result = subprocess.run(
-        [ffmpeg, "-y", "-loglevel", "error", "-i", str(wav_path), str(ogg_path)],
-        capture_output=True,
-    )
-    return result.returncode == 0 and ogg_path.is_file()
+def engine_files() -> dict[str, str]:
+    """The kaypy package, as {path inside the package: source}.
 
-
-def _convert_via_imageio_ffmpeg(wav_path: Path, ogg_path: Path) -> bool:
-    # Pure-`pip install` fallback for machines without ffmpeg on PATH (no
-    # Homebrew, no system package manager) — imageio-ffmpeg's wheel bundles
-    # an actual static ffmpeg binary per-platform, so `pip install
-    # imageio-ffmpeg` alone is enough. (A `soundfile`-only pure-Python
-    # fallback was tried first, but its bundled libsndfile OGG/Vorbis
-    # encoder segfaulted, silently, on a real 22.05kHz mono .wav in testing
-    # — a real ffmpeg binary doesn't have that problem, so that's what
-    # this uses instead.)
-    try:
-        import imageio_ffmpeg
-    except ImportError:
-        return False
-    try:
-        exe = imageio_ffmpeg.get_ffmpeg_exe()
-    except Exception:
-        return False
-    return _convert_via_ffmpeg(exe, wav_path, ogg_path)
-
-
-def convert_wav_to_ogg(out_dir: Path) -> tuple[list[str], list[str]]:
-    """pygbag's own --build step hard-fails on .wav/.mp3/.aiff assets
-    ("has a common unsupported format. Use OGG format instead.") because
-    browsers' WASM SDL2-mixer can't reliably decode most of those
-    encodings. Rather than just suppressing that error (which would still
-    ship a file that may not actually play in the browser), convert each
-    .wav to a same-named .ogg here — via ffmpeg if it's on PATH, otherwise
-    via the `imageio-ffmpeg` package. Every conversion runs in a separate
-    process, so a crash in an encoder can never take this tool down with
-    it. AssetManager.loadSound (kaplay/assets.py) then prefers that
-    sibling .ogg automatically whenever sys.platform == "emscripten", so
-    the game script itself never needs to know or care."""
-    ffmpeg = shutil.which("ffmpeg")
-    converted, unconverted = [], []
-    for wav_path in sorted(out_dir.rglob("*.wav")):
-        rel = str(wav_path.relative_to(out_dir))
-        ogg_path = wav_path.with_suffix(".ogg")
-        if ogg_path.exists():
-            converted.append(rel)  # already had one alongside the source .wav
+    Text, not bytes: every file in it is Python. The page writes each one
+    into Pyodide's filesystem so that a traceback through the engine names
+    kaplay/engine.py and a line number that exists, rather than pointing at
+    some string that was exec'd.
+    """
+    files: dict[str, str] = {}
+    for path in sorted(KAPLAY_PKG.rglob("*.py")):
+        rel = path.relative_to(KAPLAY_PKG)
+        if set(rel.parts) & SKIP_DIRS:
             continue
-        ok = ffmpeg is not None and _convert_via_ffmpeg(ffmpeg, wav_path, ogg_path)
-        if not ok:
-            ok = _convert_via_imageio_ffmpeg(wav_path, ogg_path)
-        (converted if ok else unconverted).append(rel)
-    return converted, unconverted
+        files[str(rel).replace("\\", "/")] = path.read_text()
+    return files
 
 
-# ---------------------------------------------------------------- build
+# ------------------------------------------------------------- the page
 
-def assemble(game_script: Path, extra_assets: list[Path], out_dir: Path) -> tuple[Path, list[str]]:
-    if not game_script.is_file():
-        raise SystemExit(f"no such game script: {game_script}")
+def _js(value) -> str:
+    """A JavaScript literal that cannot end the <script> block it sits in.
 
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+    The HTML parser stops a script block at the first `</script`, wherever it
+    appears — inside a string literal, inside a comment, anywhere. It does not
+    know it is reading JavaScript. `<\\/` is identical to `</` in JavaScript
+    and invisible to the parser, so escaping it costs nothing and removes a
+    whole class of failure: a game whose engine silently spills onto the page
+    as visible text.
+    """
+    return json.dumps(value).replace("</", "<\\/")
 
-    # 1. the engine itself — minus the starter assets, which are only there
-    #    for `kaypy new` and would otherwise bloat every web build by
-    #    several megabytes of sprites the game may not even use.
-    shutil.copytree(
-        KAPLAY_PKG, out_dir / "kaplay",
-        ignore=shutil.ignore_patterns("starter", "__pycache__", "*.pyc"),
-    )
 
-    # 2. the game script, kept under its own name so `import <name>` in
-    #    the generated main.py runs it (main.py is reserved for the
-    #    wrapper pygbag actually launches).
-    module_name = game_script.stem
-    shutil.copy2(game_script, out_dir / f"{module_name}.py")
+def build_page(game_script: Path, extra_assets: list[Path], title: str | None,
+               size: tuple[int, int] = (800, 600)) -> tuple[str, list[str]]:
+    """The whole game, as one HTML document."""
+    if not PAGE_TEMPLATE.is_file():
+        raise SystemExit(
+            f"the page template is missing from the installed package "
+            f"({PAGE_TEMPLATE}). A broken install — try `pip install "
+            f"--force-reinstall kaypy`."
+        )
 
-    # 3. the assets the script asks for, each landing at exactly the path
-    #    the script spells, so its own loadSprite()/loadSound() calls find
-    #    them unchanged.
     used = find_assets(game_script)
+    assets: dict[str, str] = {}
     for spelled in used:
-        src = game_script.parent / spelled
-        dest = out_dir / spelled
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
+        assets[spelled] = base64.b64encode(
+            (game_script.parent / spelled).read_bytes()).decode("ascii")
 
-    # 4. anything named with --assets, for paths the script builds at
-    #    runtime rather than spelling out.
     for src in extra_assets:
         if not src.exists():
             print(f"warning: --assets path {src} does not exist, skipping")
             continue
-        dest = out_dir / src.name
-        if src.is_dir():
-            shutil.copytree(src, dest, dirs_exist_ok=True)
-        else:
-            shutil.copy2(src, dest)
+        for path in ([src] if src.is_file() else sorted(p for p in src.rglob("*") if p.is_file())):
+            rel = path.name if src.is_file() else str(
+                Path(src.name) / path.relative_to(src)).replace("\\", "/")
+            assets[rel] = base64.b64encode(path.read_bytes()).decode("ascii")
+            if rel not in used:
+                used.append(rel)
 
-    # 5. the generated pygbag entry point
-    (out_dir / "main.py").write_text(MAIN_PY_TEMPLATE.format(module_name=module_name))
+    slots = {
+        "__TITLE__": (title or game_script.stem).replace("&", "&amp;")
+                                                .replace("<", "&lt;")
+                                                .replace(">", "&gt;"),
+        "__WIDTH__": str(size[0]),
+        "__HEIGHT__": str(size[1]),
+        "__PYODIDE__": PYODIDE_CDN,
+        "__ENGINE__": _js(engine_files()),
+        "__ASSETS__": _js(assets),
+        "__PROGRAM__": _js(game_script.read_text()),
+    }
 
-    return out_dir, used
+    page = PAGE_TEMPLATE.read_text()
+    missing = [name for name in slots if name not in page]
+    if missing:
+        raise SystemExit("the page template has no %s slot — "
+                         "kaplay/web_page.html and this file disagree."
+                         % ", ".join(missing))
+
+    # ONE pass, not one replace() per slot.
+    #
+    # The engine carries this very file, and this very file contains the
+    # literal text "__ASSETS__" a few lines up. Filling the slots one at a
+    # time put the engine in first and then went looking for "__ASSETS__"
+    # again — finding the mention inside webbuild.py's own source and
+    # replacing it with the game's assets, halfway through a Python string
+    # inside a JSON string. The page still looked plausible and the JSON no
+    # longer parsed.
+    #
+    # A single pass cannot do that: what goes in is never looked at again.
+    return re.sub("|".join(slots), lambda m: slots[m.group(0)], page), used
+
+
+def read_size(game_script: Path) -> tuple[int, int]:
+    """The width and height the script asks kaplay() for.
+
+    Only so the canvas starts at the right size instead of resizing visibly on
+    the first frame. Read off the syntax tree, never run; anything it cannot
+    work out (a variable, a computed value) falls back to kaypy's own default,
+    which is what the engine would use anyway.
+    """
+    width, height = 800, 600
+    try:
+        tree = ast.parse(game_script.read_text())
+    except SyntaxError:
+        return width, height
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "kaplay"):
+            for kw in node.keywords:
+                if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, int):
+                    if kw.arg == "width":
+                        width = kw.value.value
+                    elif kw.arg == "height":
+                        height = kw.value.value
+    return width, height
 
 
 # ---------------------------------------------------------------- serve
@@ -260,139 +261,77 @@ def pick_port(preferred: int) -> int:
     raise SystemExit(f"ports {preferred}-{preferred + 9} are all busy — pass --port")
 
 
-def serve(web_dir: Path, preferred_port: int):
-    """Serve the built site, and say 127.0.0.1 rather than localhost.
+def serve(page: Path, preferred_port: int):
+    """Serve the built file, for the cases where opening it directly won't do.
 
-    THE HOSTNAME IS LOAD-BEARING. It is the same server either way, but
-    pygbag's in-browser bootstrap does this (support/cross/aio/pep0723.py):
-
-        elif platform.window.location.href.startswith("http://localhost:8"):
-            rewritecdn = "http://localhost:8000/cdn/"
-
-    — that is, a page served from localhost on a port starting with 8 is
-    assumed to have a local mirror of pygbag's package CDN, so every wheel it
-    needs is fetched from *your* server instead of pygame-web.github.io. We
-    have no such mirror, so the one wheel that matters 404s:
-
-        GET /cdn/cp312/pygame_ce-2.5.7-cp312-cp312-wasm32_bi_emscripten.whl
-        404
-
-    and the game dies at a blank "Loading, please wait ..." — after every
-    other file, including the whole Python interpreter, has loaded from the
-    real CDN perfectly well. Nothing in the build is wrong; the page just
-    asked the wrong host for one file.
-
-    `http://127.0.0.1:8000/` does not match that prefix, so the rewrite never
-    happens and the wheel comes from the CDN like everything else. Verified by
-    loading one unchanged build both ways: `localhost` 404s, `127.0.0.1` runs.
-
-    PYGPI is pygbag's own override for this and looks like the proper fix, but
-    it is read from the runtime's environment, which is passed through the
-    query string — and the value gets spliced into the interpreter URL, which
-    comes out as `cpythonttps://pygame-webgithub.io/cdn//main.js`. Also tried,
-    also in a real browser. The hostname is the fix.
+    Opening the file is the normal way — it is one document and it fetches
+    nothing but Python. A server is still worth having for two cases: trying
+    the game on a phone or another machine on the same network, and browsers
+    or extensions configured to treat file:// pages harshly.
     """
-    if not web_dir.is_dir():
-        print(f"\nnothing to serve: {web_dir} doesn't exist (did the build fail above?)")
-        return
     port = pick_port(preferred_port)
     print("\n" + "=" * 62)
-    print(f"  Your game is running at:  http://127.0.0.1:{port}")
+    print(f"  Your game is running at:  http://127.0.0.1:{port}/{page.name}")
     print("=" * 62)
-    print("\nOpen that in a browser and click the page once to start it.")
-    print("Use 127.0.0.1, not localhost — see serve() for why the difference")
-    print("matters. On localhost the page stops at 'Loading, please wait'.")
-    print("Press Ctrl-C here when you're done.\n")
+    print("\nPress Ctrl-C here when you're done.\n")
     try:
         subprocess.run(
-            [sys.executable, "-m", "http.server", str(port), "--directory", str(web_dir)],
+            [sys.executable, "-m", "http.server", str(port),
+             "--directory", str(page.parent)],
             check=False,
         )
     except KeyboardInterrupt:
         pass
-    print(f"\nServer stopped. The built site is still at:\n    {web_dir}")
-    print("Upload that folder as-is to itch.io or any static host to publish it.")
+    print(f"\nServer stopped. Your game is still at:\n    {page}")
 
 
 # ----------------------------------------------------------------- main
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("game_script", type=Path, help="the kaypy game .py file to put on the web")
     ap.add_argument("--out", type=Path, default=None,
-                    help="output folder [default: web_build/<game script name>]")
+                    help="output file [default: web_build/<game script name>.html]")
+    ap.add_argument("--title", default=None, help="the browser tab's title")
     ap.add_argument("--assets", nargs="*", type=Path, default=[],
-                    help="extra files/folders to copy, for assets the script doesn't spell out")
-    ap.add_argument("--no-build", action="store_true",
-                    help="only assemble the folder; don't run pygbag")
-    ap.add_argument("--no-serve", action="store_true",
-                    help="build, but don't start a local server afterwards")
-    ap.add_argument("--port", type=int, default=8000, help="port for the local server [default: 8000]")
-    args = ap.parse_args()
+                    help="extra files/folders to carry, for assets the script doesn't spell out")
+    ap.add_argument("--serve", action="store_true",
+                    help="also start a local server and print a URL")
+    ap.add_argument("--port", type=int, default=8000,
+                    help="port for --serve [default: 8000]")
+    args = ap.parse_args(argv)
 
     game_script = args.game_script.resolve()
-    out_dir = (args.out or default_out_dir(args.game_script.stem)).resolve()
-    out_dir, used = assemble(game_script, [p.resolve() for p in args.assets], out_dir)
+    if not game_script.is_file():
+        raise SystemExit(f"no such game script: {game_script}")
 
-    print(f"Assembled {game_script.name} for the web in {out_dir}")
+    out = (args.out or default_out_file(game_script.stem)).resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    page, used = build_page(game_script, [p.resolve() for p in args.assets],
+                            args.title, read_size(game_script))
+    out.write_text(page)
+
+    print(f"Built {game_script.name} as one file:\n    {out}")
+    print(f"    {len(page) / 1024:.0f} KB, including {len(used)} asset"
+          f"{'' if len(used) == 1 else 's'}")
     if used:
-        print(f"  assets found in the script ({len(used)}): {', '.join(used)}")
+        print(f"    carried: {', '.join(used)}")
     else:
-        print("  no asset files named in the script — if it does load some, pass --assets")
+        print("    no asset files named in the script — if it does load some, "
+              "pass --assets")
 
-    converted, unconverted = convert_wav_to_ogg(out_dir)
-    if converted:
-        via = "ffmpeg" if shutil.which("ffmpeg") else "imageio-ffmpeg"
-        print(f"  converted for the browser ({via}): {', '.join(converted)}")
-    disable_sound_format_error = bool(unconverted)
-    if unconverted:
-        print(f"\nWarning: couldn't produce a .ogg for: {', '.join(unconverted)}.")
-        print("Passing --disable-sound-format-error so the build doesn't hard-fail on")
-        print("them, but the original file may not actually play in every browser.")
-        print("Fix it with (no Homebrew/system package manager needed):")
-        print("    pip install imageio-ffmpeg")
-        print("...then run this again.")
+    if args.serve:
+        serve(out, args.port)
+        return 0
 
-    pygbag_cmd = [sys.executable, "-m", "pygbag", "--build"]
-    # pygbag's default (--can_close 0) registers a beforeunload handler
-    # that calls confirm("Are you sure you want to navigate away...?").
-    # Modern Chrome and Safari block synchronous confirm() during
-    # beforeunload outright, and rather than failing quietly that knocks
-    # pygbag's runtime into a fetch -> click -> blocked-confirm -> reboot
-    # loop that never gets as far as running the game. --can_close 1
-    # skips the handler entirely.
-    pygbag_cmd += ["--can_close", "1"]
-    if disable_sound_format_error:
-        pygbag_cmd.append("--disable-sound-format-error")
-    pygbag_cmd.append(str(out_dir))
-
-    if args.no_build:
-        print("\n--no-build given, so stopping here. To finish it yourself:\n")
-        print("    " + " ".join(pygbag_cmd) + "\n")
-        return
-
-    print(f"\nBuilding the web version (this needs internet the first time)...\n")
-    result = subprocess.run(pygbag_cmd, check=False)
-    if result.returncode != 0:
-        raise SystemExit(
-            "\npygbag failed (see its output above). If it couldn't reach\n"
-            "pygame-web.github.io, that's the WASM runtime download — it needs\n"
-            "ordinary internet access, and a sandboxed or allowlisted network\n"
-            "will block it."
-        )
-
-    web_dir = out_dir / "build" / "web"
-    if args.no_serve:
-        print(f"\nBuilt: {web_dir}")
-        print("Serve that folder with any static server (not file://) to try it,")
-        print("and open it as 127.0.0.1, not localhost — see serve() for why.")
-        print("or upload it as-is to itch.io / any static host.")
-        return
-
-    serve(web_dir, args.port)
+    print("\nDouble-click it to play. The first run needs the internet, for")
+    print("Python itself; after that the browser has it cached.")
+    print("To publish: upload that one file to itch.io as an HTML project.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
