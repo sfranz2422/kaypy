@@ -23,6 +23,18 @@ collision system, with `'int' object is not callable` — nowhere near the line
 responsible. It now raises immediately, names the method, and suggests picking
 another name. Found by writing asteroids.py and losing a while to it.
 
+**The README leads with decorators now.** Input, collisions and scenes all
+showed the lambda first; they show the decorator first and the lambda after,
+as the shorter option for a one-line handler. The `addLevel` tile factories
+stay lambdas and now say why — they are recipes that get called to build a
+component list, not event handlers.
+
+**`tests/test_readme_code.py`** — every Python block in the README is executed
+against the real engine, fragments included, on a preamble that supplies the
+names they lean on. Nothing checked the README before: `test_guide_code.py`
+covers GUIDE.md and only its whole programs, and the README is almost all
+fragments and is the first thing anyone reads.
+
 `tests/test_rotate.py`: 32 checks. The direction and the pivot are measured
 rather than reasoned about — a marker pixel is drawn and the test asks where
 it landed — because both conventions are easy to get backwards and neither

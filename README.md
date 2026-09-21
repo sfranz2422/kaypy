@@ -92,45 +92,50 @@ Each component adds its own methods to the object. `body()` is what gives you
 `.jump()` and `.isGrounded()`; ask for them without it and you get a plain
 `AttributeError` telling you so.
 
-**Input is callbacks — write them whichever way reads better.**
+**Input is callbacks — put the event above the function it runs.**
 
 ```python
 SPEED = 320
 
-onKeyDown("left",  lambda: player.move(-SPEED, 0))   # every frame while held
-onKeyDown("right", lambda: player.move(SPEED, 0))
-```
+@onKeyDown("left")                       # every frame while held
+def go_left():
+    player.move(-SPEED, 0)
 
-A lambda is fine for one short line. The moment a handler needs more than
-that, put the event above a normal function instead — same event, same
-result:
 
-```python
-@onKeyPress("space")
+@onKeyPress("space")                     # once, when the key goes down
 def jump():
     if player.isGrounded():
         player.jump(1000)
 ```
 
-Every event works both ways. The decorator form is worth knowing because a
-lambda can only hold a *single expression*, and the workarounds for that get
-ugly fast: as a lambda, the jump above has to be written
+Every event also takes a function directly, which is shorter when the handler
+is one short line and nothing else:
+
+```python
+onKeyDown("right", lambda: player.move(SPEED, 0))
+```
+
+Both forms do exactly the same thing, so use whichever reads better. The
+decorator is the one to reach for first, because a lambda can only hold a
+*single expression* and the workarounds get ugly fast: as a lambda, the jump
+above has to be written
 `lambda: player.jump(1000) if player.isGrounded() else None` — where the
 `else None` does nothing at all and is only there to satisfy Python — and a
 handler that assigns something has to reach for
-`lambda: setattr(player, "pos", spawn)` because a lambda can't contain `=`.
+`lambda: setattr(player, "pos", spawn)`, because a lambda cannot contain `=`.
 As a decorator both are just ordinary indented code. Named handlers also show
 up in error messages as `jump` rather than `<lambda>`.
 
 **Collisions are events, addressed by tag.**
 
 ```python
-player.onCollide("coin", lambda coin: coin.destroy())
-
 @player.onCollide("danger")
 def died(spike):
     player.pos = level.tile2Pos(2, 5)
     go("gameover")
+
+
+player.onCollide("coin", lambda coin: coin.destroy())
 ```
 
 Only objects with `area()` collide at all. An object with `area()` *and*
@@ -145,11 +150,25 @@ what "thrust forward" means once a thing can face anywhere.
 ship = add([sprite("ship"), pos(center()), anchor("center"), rotate(0)])
 ship.vel = vec2(0, 0)
 
-onKeyDown("left",  lambda: ship.rotateBy(-200 * dt()))
-onKeyDown("right", lambda: ship.rotateBy(200 * dt()))
-onKeyDown("up",    lambda: setattr(ship, "vel",
-                                   ship.vel + Vec2.fromAngle(ship.angle) * 320 * dt()))
+
+@onKeyDown("left")
+def turn_left():
+    ship.rotateBy(-200 * dt())
+
+
+@onKeyDown("right")
+def turn_right():
+    ship.rotateBy(200 * dt())
+
+
+@onKeyDown("up")
+def thrust():
+    ship.vel = ship.vel + Vec2.fromAngle(ship.angle) * 320 * dt()
 ```
+
+That last one is the case the decorator exists for: `thrust` *assigns*, and a
+lambda cannot contain `=`, so as a one-liner it would have to be
+`lambda: setattr(ship, "vel", ...)`.
 
 Rotation is about the anchor, so `anchor("center")` spins on the spot and the
 default top-left corner swings around it. The **collision box does not turn**
@@ -194,11 +213,23 @@ level = addLevel([
 player = level.get("player")[0]
 ```
 
+Those lambdas are not event handlers — each one is a recipe that gets called
+every time that character appears, to build a fresh list of components. A
+lambda returning a list is exactly the right shape for that, so they stay
+lambdas.
+
 **Scenes are named screens you jump between.**
 
 ```python
-scene("game", lambda: build_the_level())
-scene("gameover", lambda score: show_score(score))
+@scene("game")
+def build_game():
+    build_the_level()
+
+
+@scene("gameover")
+def show_gameover(score):
+    show_score(score)
+
 
 go("game")                 # start here
 # ...later, from anywhere:
