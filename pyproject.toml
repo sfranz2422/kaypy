@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kaypy"
+version = "0.1.0"
+description = "A real-Python game engine with KAPLAY's component API, backed by pygame-ce, exporting to the browser."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Stephen Franz" }]
+keywords = ["game", "gamedev", "game-engine", "kaplay", "pygame", "education", "teaching", "wasm"]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: Education",
+    "Topic :: Software Development :: Libraries :: pygame",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    # Pinned exact, not a floating >=, on purpose — see DEVELOPING.md, "Why
+    # pygame-ce is pinned, not vendored". Bump deliberately, re-run tests/
+    # and examples/, then move the pin.
+    "pygame-ce==2.5.8",
+]
+
+[project.optional-dependencies]
+# Only needed by `kaypy web` (the pygbag build), never at runtime.
+# imageio-ffmpeg is the .wav->.ogg converter that step falls back to when
+# ffmpeg isn't on PATH — its wheel bundles an actual static ffmpeg binary
+# per-platform, so plain `pip install` is enough; no Homebrew or other
+# system package manager needed.
+web = ["pygbag>=0.9", "imageio-ffmpeg>=0.5"]
+
+[project.urls]
+Homepage = "https://github.com/stephenfranz/kaypy"
+Repository = "https://github.com/stephenfranz/kaypy"
+Documentation = "https://github.com/stephenfranz/kaypy/blob/main/GUIDE.md"
+
+[project.scripts]
+kaypy = "kaplay.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["kaplay*"]
+
+[tool.setuptools.package-data]
+# The starter game and its sprites/sounds ship inside the package, so
+# `kaypy new mygame` can produce something that runs without a checkout.
+"kaplay.starter" = ["*.py", "*.png", "*.md", "images/*", "dungeon/*", "sounds/*"]
