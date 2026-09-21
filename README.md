@@ -224,6 +224,15 @@ prints a URL to open. Ctrl-C stops the server; the finished site stays in
 `web_build/<name>/build/web/` and can be uploaded as-is to itch.io or any
 static host.
 
+**Open the URL it prints, exactly as printed — `127.0.0.1`, not `localhost`.**
+They are the same server, but pygbag treats a page served from
+`http://localhost:8…` as having a local mirror of its package CDN, and fetches
+the pygame WebAssembly wheel from your machine instead of from
+pygame-web.github.io. There is no such mirror, so that one file 404s and the
+game sits at "Loading, please wait ..." for ever — after everything else,
+including the whole Python interpreter, has loaded perfectly. Nothing is wrong
+with the build. `kaplay/webbuild.py`'s `serve()` has the details.
+
 | Flag | Effect |
 |------|--------|
 | `--no-serve` | build, but don't start the local server |

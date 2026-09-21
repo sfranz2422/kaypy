@@ -223,7 +223,54 @@ The table is now built lazily on first use — `onKeyDown`/`onKeyPress`/
 `onKeyRelease` or the frame loop, all of which only happen after `kaplay()`.
 Pinned by `tests/test_lazy_key_map.py`.
 
-### 4. A reboot loop on the very first click
+### 4. localhost is not 127.0.0.1
+
+A finished build served on `http://localhost:8000/` stops dead at "Loading,
+please wait ...". The only clue is one line in the dev server's log:
+
+```
+::1 - - "GET /cdn/cp312/pygame_ce-2.5.7-cp312-cp312-wasm32_bi_emscripten.whl" 404
+```
+
+Everything else — `index-0.9.3-cp312.json`, `game.tar.gz`, `cpython312/main.js`,
+the whole interpreter — comes down from the real CDN with a 200. Only the
+pygame wheel is asked of the wrong host, and the cause is in pygbag's own
+bootstrap, `support/cross/aio/pep0723.py`:
+
+```python
+elif platform.window.location.href.startswith("http://localhost:8"):
+    rewritecdn = "http://localhost:8000/cdn/"
+```
+
+A page on localhost:8xxx is assumed to be sitting next to a local mirror of the
+package CDN. kaypy has no mirror, so the fetch 404s and the boot never
+finishes.
+
+`http://127.0.0.1:8000/` does not match that prefix. Verified by loading one
+unchanged build both ways in a real browser: localhost 404s and stops,
+127.0.0.1 runs the game. `serve()` prints 127.0.0.1 for that reason, and
+`tests/test_web_serve_host.py` keeps it that way.
+
+**PYGPI looks like the proper fix and is not.** The same function honours it:
+
+```python
+if os.environ.get("PYGPI", ""):
+    rewritecdn = os.environ.get("PYGPI")
+```
+
+but that environment is the runtime's, passed in through the query string
+(`?KEY=VALUE`, parsed in `support/cpythonrc.py`). Tried in a real browser: the
+variable does arrive — the boot log shows
+`orig_argv {0: PYGPI=https://pygame-web.github.io/cdn/}` — but the value is
+spliced into the interpreter URL, which comes out as
+
+```
+https://pygame-web.github.io/cdn/0.9.3/cpythonttps://pygame-webgithub.io/cdn//main.js
+```
+
+and nothing loads at all. The hostname is the fix.
+
+### 5. A reboot loop on the very first click
 
 pygbag's default (`--can_close 0`) registers a `beforeunload` handler that
 calls `confirm("Are you sure you want to navigate away from this page ?")`.

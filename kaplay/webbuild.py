@@ -5,7 +5,10 @@
 
 That is the whole thing. It works out which images and sounds the script
 uses by reading the script, copies them along with the engine, builds the
-WASM bundle, then serves it and prints a URL to open. Ctrl-C stops the
+WASM bundle, then serves it and prints a URL to open. That URL says
+127.0.0.1 and not localhost, which is not cosmetic — see serve() for the
+pygbag behaviour that makes the difference between a running game and a
+page stuck on "Loading, please wait ...". Ctrl-C stops the
 server; the built site stays on disk (web_build/<name>/build/web/) and can
 be uploaded as-is to itch.io or any static host.
 
@@ -258,14 +261,47 @@ def pick_port(preferred: int) -> int:
 
 
 def serve(web_dir: Path, preferred_port: int):
+    """Serve the built site, and say 127.0.0.1 rather than localhost.
+
+    THE HOSTNAME IS LOAD-BEARING. It is the same server either way, but
+    pygbag's in-browser bootstrap does this (support/cross/aio/pep0723.py):
+
+        elif platform.window.location.href.startswith("http://localhost:8"):
+            rewritecdn = "http://localhost:8000/cdn/"
+
+    — that is, a page served from localhost on a port starting with 8 is
+    assumed to have a local mirror of pygbag's package CDN, so every wheel it
+    needs is fetched from *your* server instead of pygame-web.github.io. We
+    have no such mirror, so the one wheel that matters 404s:
+
+        GET /cdn/cp312/pygame_ce-2.5.7-cp312-cp312-wasm32_bi_emscripten.whl
+        404
+
+    and the game dies at a blank "Loading, please wait ..." — after every
+    other file, including the whole Python interpreter, has loaded from the
+    real CDN perfectly well. Nothing in the build is wrong; the page just
+    asked the wrong host for one file.
+
+    `http://127.0.0.1:8000/` does not match that prefix, so the rewrite never
+    happens and the wheel comes from the CDN like everything else. Verified by
+    loading one unchanged build both ways: `localhost` 404s, `127.0.0.1` runs.
+
+    PYGPI is pygbag's own override for this and looks like the proper fix, but
+    it is read from the runtime's environment, which is passed through the
+    query string — and the value gets spliced into the interpreter URL, which
+    comes out as `cpythonttps://pygame-webgithub.io/cdn//main.js`. Also tried,
+    also in a real browser. The hostname is the fix.
+    """
     if not web_dir.is_dir():
         print(f"\nnothing to serve: {web_dir} doesn't exist (did the build fail above?)")
         return
     port = pick_port(preferred_port)
     print("\n" + "=" * 62)
-    print(f"  Your game is running at:  http://localhost:{port}")
+    print(f"  Your game is running at:  http://127.0.0.1:{port}")
     print("=" * 62)
     print("\nOpen that in a browser and click the page once to start it.")
+    print("Use 127.0.0.1, not localhost — see serve() for why the difference")
+    print("matters. On localhost the page stops at 'Loading, please wait'.")
     print("Press Ctrl-C here when you're done.\n")
     try:
         subprocess.run(
@@ -351,6 +387,7 @@ def main():
     if args.no_serve:
         print(f"\nBuilt: {web_dir}")
         print("Serve that folder with any static server (not file://) to try it,")
+        print("and open it as 127.0.0.1, not localhost — see serve() for why.")
         print("or upload it as-is to itch.io / any static host.")
         return
 
