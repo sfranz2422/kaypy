@@ -4,3 +4,4 @@ __pycache__/
 web_build/
 build/
 dist/
+.DS_Store
