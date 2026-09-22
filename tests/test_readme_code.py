@@ -47,6 +47,8 @@ loadSprite("ship", "images/bean.png")
 loadSprite("grass", "images/grass.png")
 loadSprite("coin", "images/coin.png")
 loadSprite("spike", "images/spike.png")
+loadSprite("ogre", "images/spike.png")
+loadSprite("bullet", "images/coin.png")
 
 SPEED = 320
 player_score = 0

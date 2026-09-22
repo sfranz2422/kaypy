@@ -27,6 +27,13 @@ from .comps.transform import (anchor, scale, rotate, color, opacity, outline,
                               z, fixed)
 from .comps.state import state
 from .comps.move import move, offscreen, tile
+from .comps.health import health
+from .comps.lifespan import lifespan
+
+# ---- drawing straight to the screen, and remembering things -------------
+from .drawing import (drawRect, drawCircle, drawLine, drawLines, drawText,
+                      drawSprite)
+from .storage import setData, getData
 from .callutil import register_or_decorate
 
 __all__ = [
@@ -36,8 +43,14 @@ __all__ = [
     "add", "get", "addLevel", "addKaboom",
     "pos", "sprite", "rect", "circle", "text", "area", "body",
     "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
-    "move", "offscreen", "tile", "state",
+    "move", "offscreen", "tile", "state", "health", "lifespan",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
+    "onMouseDown", "onMousePress", "onMouseRelease", "onMouseMove",
+    "isMouseDown", "isMousePressed", "isMouseReleased", "isMouseMoved",
+    "mouseDeltaPos",
+    "onDraw", "drawRect", "drawCircle", "drawLine", "drawLines",
+    "drawText", "drawSprite",
+    "setData", "getData",
     "wait", "loop", "tween", "easings", "onCollide",
     "scene", "go",
     "width", "height", "center", "dt", "vec2", "Vec2",
@@ -122,6 +135,81 @@ def onKeyRelease(key, fn=None):
 
 def onClick(fn=None):
     return register_or_decorate(fn, lambda f: current_engine().events.on_click(f))
+
+
+# ---- mouse ---------------------------------------------------------------
+#
+# Every one takes a button name, or leaves it out for the left one — which is
+# the button a student means nine times in ten, and the only one on a lot of
+# trackpads.
+
+def onMouseDown(button=None, fn=None):
+    """Every frame a mouse button is held."""
+    if callable(button):                 # onMouseDown(fn) — left button
+        button, fn = None, button
+    return register_or_decorate(
+        fn, lambda f: current_engine().events.on_mouse_down(button, f))
+
+
+def onMousePress(button=None, fn=None):
+    """Once, when a mouse button goes down."""
+    if callable(button):
+        button, fn = None, button
+    return register_or_decorate(
+        fn, lambda f: current_engine().events.on_mouse_press(button, f))
+
+
+def onMouseRelease(button=None, fn=None):
+    """Once, when a mouse button comes back up."""
+    if callable(button):
+        button, fn = None, button
+    return register_or_decorate(
+        fn, lambda f: current_engine().events.on_mouse_release(button, f))
+
+
+def onMouseMove(fn=None):
+    """Whenever the mouse moves."""
+    return register_or_decorate(
+        fn, lambda f: current_engine().events.on_mouse_move(f))
+
+
+def isMouseDown(button=None):
+    """Is that mouse button held down right now?"""
+    return current_engine().events.is_mouse_down(button)
+
+
+def isMousePressed(button=None):
+    """Did it go down this frame?"""
+    return current_engine().events.is_mouse_pressed(button)
+
+
+def isMouseReleased(button=None):
+    """Did it come up this frame?"""
+    return current_engine().events.is_mouse_released(button)
+
+
+def isMouseMoved():
+    """Did the mouse move this frame?"""
+    return current_engine().events.is_mouse_moved()
+
+
+def mouseDeltaPos():
+    """How far the mouse moved this frame, as a vec2."""
+    dx, dy = current_engine().events.mouse_delta()
+    return Vec2(dx, dy)
+
+
+def onDraw(fn=None):
+    """Draw straight to the screen, after the game objects.
+
+    The only place drawRect(), drawLine(), drawText() and the rest will run —
+    see kaypy/drawing.py for why.
+    """
+    def register(f):
+        current_engine().events.draw_handlers.append(f)
+        return f
+
+    return register_or_decorate(fn, register)
 
 
 def wait(seconds, fn=None):

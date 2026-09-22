@@ -2,8 +2,85 @@
 
 ## Unreleased
 
+**The mouse does more than click.** `onClick` answered "somebody clicked" and
+nothing else — not which button, not whether one is being held, not that the
+mouse moved. Aiming at the cursor, dragging a piece, hold-to-charge and
+drawing all needed one of those and had no way to ask.
 
+- `onMousePress`, `onMouseRelease`, `onMouseDown`, `onMouseMove`
+- `isMouseDown`, `isMousePressed`, `isMouseReleased`, `isMouseMoved`,
+  `mouseDeltaPos`
+- Buttons are named — `"left"`, `"right"`, `"middle"` — as in KAPLAY, and
+  default to the left one. pygame numbers them 1, 2, 3 with middle in the
+  middle, which is not the order anyone guesses.
+- `onClick` is unchanged and still means the left button.
 
+**`onDraw`, and drawing that is not a game object.** A health bar, an aim
+line, a grid, a radius — marks on the screen for one frame, not things in the
+world. Making each one a game object works and teaches the wrong lesson about
+what a game object is for.
+
+- `drawRect`, `drawCircle`, `drawLine`, `drawLines`, `drawText`, `drawSprite`
+- They draw in world space by default and move with the camera; `fixed=True`
+  for a HUD, the same distinction `fixed()` makes for objects.
+- Called outside `onDraw` they **raise** and say what to write instead. A
+  drawing that silently never appears is close to undebuggable for a beginner.
+
+**`health()` and `lifespan()`.**
+
+- `health(hp)` adds `.hp`, `.hurt()`, `.heal()`, `.onHurt()`, `.onHeal()`,
+  `.onDeath()` and `.isAlive()`. `onDeath` fires **exactly once**, however many
+  things land in the same frame — a death handler that runs twice drops two
+  coins and scores twice, and looks like generosity until someone notices.
+  It does not destroy the object, so it can play an animation first.
+- `lifespan(seconds, fade=0)` destroys the object when its time is up, fading
+  out first if asked. Replaces `wait(2, lambda: b.destroy())`, and belongs to
+  the bullet rather than to a timer somewhere else holding it alive.
+
+**`setData()` and `getData()` — a high score that is still there tomorrow.**
+A `kaypy-data.json` file beside the game on a desktop, deliberately plain so a
+student can open it and delete it; the page's localStorage on the web.
+
+- A save that cannot be written returns False, says so once, and lets the game
+  carry on. A locked-down school account is not a reason to crash.
+- It never pretends: `getData()` after a failed `setData()` returns what is
+  really stored.
+- A corrupt file is ignored rather than fatal, and repairs itself on the next
+  save.
+- Only things that can be written down — numbers, text, True/False, None,
+  lists and dicts of those. Saving a game object is refused, by name, with
+  what to do instead.
+
+## 0.5.0
+
+**`from kaypy import *`.** The package was called `kaplay` — the name of the
+JavaScript library whose API it follows — which put a project that says it is
+not affiliated with KAPLAY in the position of telling every student to type
+that project's name on line one.
+
+`kaplay(width=800)` is unchanged: that is KAPLAY's own function name, and
+keeping it is what makes their documentation translate line for line. Only the
+module moved.
+
+There is no compatibility alias, deliberately. `from kaplay import *` now
+fails — and in a browser IDE that still recognises the old spelling, it fails
+with a sentence naming the one line to change.
+
+## 0.4.0
+
+**`kaypy web` builds one file.** It used to build a folder — an `index.html`
+that fetched a `.apk` archive at run time, plus a tarball and a favicon, by way
+of pygbag. That works behind a web server and not at all when you double-click
+the `index.html`, because a `file://` page may not read the file next to it. So
+you could build your own game and not open it.
+
+```bash
+kaypy web game.py
+# -> web_build/game.html    412 KB, including 3 assets
+```
+
+Double-click it and it plays. Upload that one file to itch.io — no zip, no
+folder to keep together.
 
 - **Your program is carried byte for byte.** The page writes the engine and
   the assets into Pyodide's in-memory filesystem before running anything, so

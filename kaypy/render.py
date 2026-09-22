@@ -5,13 +5,30 @@ from .geometry import get_world_pos, get_size
 
 
 class RenderSystem:
-    def draw(self, objs, screen, camera, debug_inspect=False):
+    def draw(self, objs, screen, camera, debug_inspect=False, on_draw=()):
         camera.begin_frame()
         visible = [o for o in objs if o.exists() and _is_drawable(o)]
         visible.sort(key=lambda o: o.comp("z").z if o.has("z") else 0)
 
         for obj in visible:
             self._draw_one(obj, screen, camera)
+
+        # onDraw handlers, after the objects and before the debug boxes, so a
+        # health bar sits over the game and the collision boxes sit over
+        # everything. The surface and camera are handed to the drawing module
+        # for exactly this long: drawRect() and friends refuse to run outside
+        # it, which turns "my drawing never appeared" into an error that says
+        # what to do.
+        if on_draw:
+            from . import drawing
+            from .callutil import call_flexible
+
+            drawing._begin(screen, camera)
+            try:
+                for fn in list(on_draw):
+                    call_flexible(fn)
+            finally:
+                drawing._end()
 
         if debug_inspect:
             for obj in objs:

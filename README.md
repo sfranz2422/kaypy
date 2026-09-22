@@ -177,6 +177,70 @@ spinning asteroid's hitbox from growing and shrinking as it goes round.
 `examples/asteroids.py` is the whole thing: turning, thrust, momentum,
 screen-wrap and splitting rocks.
 
+**The mouse does more than click.** `onClick` tells you *that* someone
+clicked. For aiming, dragging or holding, you need to know which button and
+whether it is down right now.
+
+```python
+@onMousePress("left")
+def shoot():
+    heading = (mousePos() - player.pos).unit()
+    add([sprite("bullet"), pos(player.pos), move(heading, 500), lifespan(2)])
+
+@onUpdate
+def charge():
+    if isMouseDown("left"):          # held, not just pressed
+        power = min(power + dt(), 1)
+```
+
+**Drawing that is not a game object.** A health bar, an aim line, a grid — a
+mark on the screen for one frame, not a thing in the world. Those go in
+`onDraw`, and the draw functions only work there.
+
+```python
+@onDraw
+def hud():
+    # fixed=True ignores the camera, which is what a HUD wants
+    drawRect(pos=vec2(20, 20), width=200, height=16, color=rgb(60, 0, 0),
+             fixed=True)
+    drawRect(pos=vec2(20, 20), width=20 * player.hp, height=16,
+             color=rgb(220, 40, 40), fixed=True)
+    drawLine(p1=player.pos, p2=mousePos(), width=2, color=rgb(255, 255, 0))
+```
+
+**Hit points, and something to do when they run out.**
+
+```python
+enemy = add([sprite("ogre"), pos(300, 200), area(), health(3), "enemy"])
+
+@enemy.onDeath
+def slain():
+    addKaboom(enemy.pos)
+    enemy.destroy()
+```
+
+`enemy.hp = 3` does the same until the third place that takes a point off,
+because now three lines have to remember to check for zero — and the one that
+forgets is the enemy that cannot be killed. `hurt()` is one place, and death is
+one event that fires exactly once however many things land in the same frame.
+
+**A high score that is still there tomorrow.**
+
+```python
+best = getData("best_score", 0)
+
+@player.onCollide("spike")
+def died():
+    if score > best:
+        setData("best_score", score)
+    go("gameover", score)
+```
+
+On your machine that is a `kaypy-data.json` file beside the game, which you
+can open and read — and delete, to start over. In a browser it is the page's
+own storage. If saving is not possible at all, the game says so once and
+carries on without it.
+
 **Gravity needs a world to fall in.**
 
 ```python
@@ -395,6 +459,8 @@ An `anims` entry looks like `{"run": {"from": 0, "to": 8, "speed": 12, "loop": T
 | `move(direction, speed)` | Drift in a direction forever. |
 | `offscreen(destroy=False, distance=64)` | Notice (or clean up) objects that leave the view. |
 | `tile(isObstacle=False)` | Mark a level tile. |
+| `health(hp, maxHP=None)`                      | Hit points. Adds `.hp`, `.hurt(n)`, `.heal(n)`, `.onDeath(fn)`, `.isAlive()`.               |
+| `lifespan(seconds, fade=0)`                   | Destroy itself after a while. `fade` needs an `opacity()`.                                  |
 | `state(start, states)` | A state machine. Adds `.enterState(n)`, `.onStateEnter(n, fn)`, `.onStateUpdate(n, fn)`. |
 | `"any string"` | A tag. Objects are found and collided-with by tag. |
 
@@ -407,7 +473,12 @@ An `anims` entry looks like `{"run": {"from": 0, "to": 8, "speed": 12, "loop": T
 | `onKeyDown(key, fn)` | Every frame the key is held. |
 | `onKeyPress(key, fn)` | Once, when the key goes down. |
 | `onKeyRelease(key, fn)` | Once, when it comes back up. |
-| `onClick(fn)` | Any click. `obj.onClick(fn)` for clicks on that object. |
+| `onClick(fn)` | Any left click. `obj.onClick(fn)` for clicks on that object. |
+| `onMousePress(button, fn)` | Once, when a mouse button goes down. |
+| `onMouseRelease(button, fn)` | Once, when it comes back up. |
+| `onMouseDown(button, fn)` | Every frame it is held. |
+| `onMouseMove(fn)` | Whenever the mouse moves. |
+| `onDraw(fn)` | Draw straight to the screen, after the objects. |
 | `obj.onCollide(tag, fn)` | Once, when a touch begins. |
 | `onCollide(tagA, tagB, fn)` | Once, when anything tagged A touches anything tagged B. |
 | `obj.onCollideUpdate(tag, fn)` | Every frame the two stay touching. |
@@ -456,6 +527,10 @@ def build_game(): ...
 | `isKeyDown(key)` | Ask instead of being told — the polling form of `onKeyDown`. |
 | `deg2rad(d)`, `rad2deg(r)` | Angles. |
 | `mousePos()`, `toWorld(pos)` | Where the mouse is, on screen and in the world. |
+| `isMouseDown(button)`, `isMousePressed(button)`, `isMouseReleased(button)` | Ask about a mouse button instead of being told. `"left"` if you leave it out. |
+| `isMouseMoved()`, `mouseDeltaPos()` | Did the mouse move this frame, and how far. |
+| `drawRect`, `drawCircle`, `drawLine`, `drawLines`, `drawText`, `drawSprite` | Draw for one frame, inside `onDraw`. `fixed=True` for a HUD that ignores the camera. |
+| `setData(key, value)`, `getData(key, default)` | Remember something between runs — a high score. A file beside the game; localStorage on the web. |
 | `setCamPos(pos)`, `setCamScale(n)`, `shake(n)` | The camera. |
 | `play(name, loop=False, volume=1.0)` | Play a sound. Returns a handle with settable `.paused` and `.volume`. |
 | `tween(start, end, seconds, setter, ease)` | Change a value smoothly. Returns a handle with `.then()`, `.cancel()`, `.finish()`, `.paused`. |

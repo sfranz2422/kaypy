@@ -1446,6 +1446,8 @@ Everything used in this guide.
 | `move(dir, speed)` | drift in a straight line |
 | `offscreen(destroy=True)` | clean up when it leaves the screen |
 | `tile(isObstacle=)` | occupies a square on a grid |
+| `health(hp)` | hit points — gives `.hp`, `.hurt()`, `.heal()`, `.onDeath()` |
+| `lifespan(secs, fade=)` | destroys itself after a while — for bullets and explosions |
 | `"a string"` | a tag |
 
 ### Events
@@ -1458,7 +1460,10 @@ configure — `@onUpdate`, `@onClick`, `@obj.onGround` — take no brackets.
 | `@onUpdate` | every frame |
 | `@onUpdate("tag")` | every frame, for each tagged object |
 | `@onKeyDown` / `@onKeyPress` / `@onKeyRelease` `(key)` | held / pressed once / let go |
-| `@onClick` | mouse clicked anywhere |
+| `@onClick` | left mouse button clicked anywhere |
+| `@onMousePress("left")` / `@onMouseRelease` / `@onMouseDown` | a button went down / came up / is held |
+| `@onMouseMove` | the mouse moved |
+| `@onDraw` | draw straight to the screen, after everything else |
 | `@obj.onClick` | that object clicked (needs `area()`) |
 | `@obj.onCollide("tag")` | touched something tagged |
 | `@obj.onCollideUpdate` / `@obj.onCollideEnd` | while touching / when it stops |
@@ -1485,6 +1490,10 @@ which is what Kaplay's JavaScript examples translate to.
 | `vec2(x, y)` | a position — has `.x`, `.y`, `.sub()`, `.unit()` |
 | `rand(a, b)`, `randi(a, b)`, `choose(list)` | randomness |
 | `mousePos()`, `toWorld(pos)` | on screen / in the world |
+| `isMouseDown("left")`, `isMousePressed()`, `isMouseReleased()` | ask about a button rather than being told |
+| `isMouseMoved()`, `mouseDeltaPos()` | did it move this frame, and how far |
+| `drawRect`, `drawCircle`, `drawLine`, `drawText`, `drawSprite` | inside `@onDraw` only — `fixed=True` for a HUD |
+| `setData(key, value)`, `getData(key, default)` | remember a high score between runs |
 | `setCamPos(pos)`, `setCamScale(n)`, `shake(n)` | the camera |
 | `play(name, loop=, paused=, volume=)` | play a sound |
 | `debug.inspect = True` | show every collision box (or press **F1**) |

@@ -298,7 +298,8 @@ class Engine:
                 self.collision.step(self._objs)
 
             self.screen.fill(self._background)
-            self.render.draw(self._objs, self.screen, self.camera, debug.inspect)
+            self.render.draw(self._objs, self.screen, self.camera, debug.inspect,
+                             self.events.draw_handlers)
             pygame.display.flip()
 
             frame_count += 1

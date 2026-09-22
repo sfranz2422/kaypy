@@ -62,6 +62,28 @@ def key_name(code: int) -> str:
     return _REVERSE_KEY_MAP.get(code, str(code))
 
 
+# pygame numbers mouse buttons 1, 2, 3 with MIDDLE in the middle, which is not
+# the order anyone guesses. Names are what a student writes and what KAPLAY's
+# documentation says, so names are what this takes.
+_BUTTONS = {"left": 1, "middle": 2, "right": 3}
+_BUTTON_NAMES = {code: name for name, code in _BUTTONS.items()}
+
+
+def resolve_button(name) -> int:
+    """A mouse button name to pygame's number. Defaults to the left one."""
+    if name is None:
+        return _BUTTONS["left"]
+    key = str(name).lower()
+    if key not in _BUTTONS:
+        raise KeyError(
+            f"unknown mouse button {name!r} — use 'left', 'right' or 'middle'")
+    return _BUTTONS[key]
+
+
+def button_name(code: int) -> str:
+    return _BUTTON_NAMES.get(code, str(code))
+
+
 class EventManager:
     def __init__(self):
         self.key_down_handlers = []
@@ -73,6 +95,21 @@ class EventManager:
         self.click_handlers = []
         self.update_handlers = []  # (tag_or_None, fn)
 
+        self.mouse_down_handlers = []      # (button, fn)
+        self.mouse_press_handlers = []     # (button, fn)
+        self.mouse_release_handlers = []   # (button, fn)
+        self.mouse_move_handlers = []
+        self.draw_handlers = []
+
+        # Edge state, rebuilt every frame in process_pygame_events. A press
+        # and a release both last exactly one frame, which is what makes
+        # isMousePressed() answerable at all — "is it down" is a question SDL
+        # can answer any time, "did it just go down" is not.
+        self._pressed_now = set()
+        self._released_now = set()
+        self._moved_now = False
+        self._delta = (0, 0)
+
     def clear(self):
         self.key_down_handlers.clear()
         self.collide_tag_handlers.clear()
@@ -80,6 +117,11 @@ class EventManager:
         self.key_release_handlers.clear()
         self.click_handlers.clear()
         self.update_handlers.clear()
+        self.mouse_down_handlers.clear()
+        self.mouse_press_handlers.clear()
+        self.mouse_release_handlers.clear()
+        self.mouse_move_handlers.clear()
+        self.draw_handlers.clear()
 
     def on_collide_tags(self, tag_a, tag_b, fn):
         self.collide_tag_handlers.append((tag_a, tag_b, fn))
@@ -114,6 +156,34 @@ class EventManager:
         self.click_handlers.append(fn)
         return fn
 
+    # ---- mouse ---------------------------------------------------------
+    #
+    # onClick() was the whole mouse API for a long time, and it is enough for
+    # "click the button" and nothing else. Aiming at the cursor, dragging a
+    # piece, holding to charge, drawing a line — every one of those needs to
+    # know which button is down *now*, or that the mouse moved, and had no way
+    # to ask.
+    #
+    # Button names, not numbers, to match KAPLAY: `"left"`, `"right"`,
+    # `"middle"`. pygame numbers them 1, 2, 3 with middle in the middle, which
+    # is a detail nobody should have to remember.
+
+    def on_mouse_down(self, button, fn):
+        self.mouse_down_handlers.append((resolve_button(button), fn))
+        return fn
+
+    def on_mouse_press(self, button, fn):
+        self.mouse_press_handlers.append((resolve_button(button), fn))
+        return fn
+
+    def on_mouse_release(self, button, fn):
+        self.mouse_release_handlers.append((resolve_button(button), fn))
+        return fn
+
+    def on_mouse_move(self, fn):
+        self.mouse_move_handlers.append(fn)
+        return fn
+
     def on_update(self, *args):
         if len(args) == 1:
             self.update_handlers.append((None, args[0]))
@@ -123,6 +193,15 @@ class EventManager:
         return fn
 
     def process_pygame_events(self, pg_events, objs):
+        # A press and a release are true for exactly one frame. Clearing them
+        # here, before this frame's events are read, is what makes that so —
+        # forget it and isMousePressed() stays true until the next click,
+        # which looks like a game that fires twice.
+        self._pressed_now.clear()
+        self._released_now.clear()
+        self._moved_now = False
+        self._delta = (0, 0)
+
         for e in pg_events:
             if e.type == pygame.KEYDOWN:
                 for code, fn in self.key_press_handlers:
@@ -132,19 +211,67 @@ class EventManager:
                 for code, fn in self.key_release_handlers:
                     if code == e.key:
                         call_flexible(fn, key_name(code))
-            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
-                for fn in self.click_handlers:
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                self._pressed_now.add(e.button)
+                for button, fn in self.mouse_press_handlers:
+                    if button == e.button:
+                        call_flexible(fn, button_name(e.button))
+                # onClick and obj.onClick are the left button only, which is
+                # what they have always meant and what KAPLAY means by them.
+                if e.button == _BUTTONS["left"]:
+                    for fn in self.click_handlers:
+                        call_flexible(fn)
+                    for obj in objs:
+                        if (obj.exists() and obj.has("area")
+                                and "click" in obj._event_handlers
+                                and obj.comp("area").isHovering()):
+                            obj._fire("click")
+            elif e.type == pygame.MOUSEBUTTONUP:
+                self._released_now.add(e.button)
+                for button, fn in self.mouse_release_handlers:
+                    if button == e.button:
+                        call_flexible(fn, button_name(e.button))
+            elif e.type == pygame.MOUSEMOTION:
+                self._moved_now = True
+                # Accumulated, not overwritten: SDL can deliver several
+                # motion events in one frame, and a handler that saw only the
+                # last one would under-report a fast drag.
+                self._delta = (self._delta[0] + e.rel[0],
+                               self._delta[1] + e.rel[1])
+                for fn in self.mouse_move_handlers:
                     call_flexible(fn)
-                for obj in objs:
-                    if (obj.exists() and obj.has("area")
-                            and "click" in obj._event_handlers
-                            and obj.comp("area").isHovering()):
-                        obj._fire("click")
 
         pressed = pygame.key.get_pressed()
         for code, fn in self.key_down_handlers:
             if pressed[code]:
                 call_flexible(fn, key_name(code))
+
+        if self.mouse_down_handlers:
+            held = pygame.mouse.get_pressed(num_buttons=3)
+            for button, fn in self.mouse_down_handlers:
+                if held[button - 1]:
+                    call_flexible(fn, button_name(button))
+
+    # ---- what a game can ask about the mouse right now -----------------
+
+    def is_mouse_down(self, button=None):
+        try:
+            return bool(pygame.mouse.get_pressed(num_buttons=3)
+                        [resolve_button(button) - 1])
+        except (pygame.error, IndexError):
+            return False
+
+    def is_mouse_pressed(self, button=None):
+        return resolve_button(button) in self._pressed_now
+
+    def is_mouse_released(self, button=None):
+        return resolve_button(button) in self._released_now
+
+    def is_mouse_moved(self):
+        return self._moved_now
+
+    def mouse_delta(self):
+        return self._delta
 
     def run_update_handlers(self, objs):
         for tag, fn in self.update_handlers:
