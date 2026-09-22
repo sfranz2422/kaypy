@@ -14,7 +14,7 @@ A game runs in two steps, and keeping them apart is the whole design:
     run(source)      the program's top level, once, top to bottom
     await drive()    the frame loop, until the game ends
 
-`run` is what `python game.py` does before atexit fires: kaplay() builds the
+`run` is what `python game.py` does before atexit fires: kaypy() builds the
 engine, everything after it registers handlers, and then it returns — with the
 game built and not yet moving. `drive` sets it going.
 

@@ -223,15 +223,15 @@ def build_page(game_script: Path, extra_assets: list[Path], title: str | None,
     return re.sub("|".join(slots), lambda m: slots[m.group(0)], page), used
 
 
-# Every name that starts the engine. kaypy() is the documented one; kaplay()
-# is the pre-rename name, kept working for files written before it.
+# Every name that starts the engine. One, today — but the set stays, and so
+# does the test that compares it against what the package exports.
 #
-# This has to list them ALL. A name missing here does not fail loudly — the
-# call simply is not recognised, and the export falls back to 800x600 while
-# reporting success. test_web_single_file.py asserts this matches what the
-# package actually exports, so adding an alias without adding it here fails a
-# test instead of shipping a quietly wrong canvas.
-INIT_NAMES = frozenset({"kaypy", "kaplay"})
+# A name missing here does not fail loudly: the call simply is not recognised,
+# the export falls back to 800x600, and the build reports success. The wrong
+# canvas turns up on itch.io. That was nearly shipped once, when kaypy() was
+# added and this still said kaplay, so the guard is worth more than the line
+# it saves.
+INIT_NAMES = frozenset({"kaypy"})
 
 
 def read_size(game_script: Path) -> tuple[int, int]:

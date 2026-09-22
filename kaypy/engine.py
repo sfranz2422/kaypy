@@ -251,8 +251,24 @@ class Engine:
 
     async def _main_loop(self):
         import os
-        max_frames = int(os.environ.get("KAYPY_TEST_MAX_FRAMES", "0")) or None
+        # Unset means no limit — a real game runs until it is closed.
+        #
+        # Read this way, rather than `int(os.environ.get(..., "0")) or None`,
+        # because that made "0" mean UNLIMITED: int("0") is falsy, so `or
+        # None` replaced it. A test that set it to 0 meaning "do not run a
+        # single frame" got a loop that never returned, at interpreter exit,
+        # with no output and nothing to attach a traceback to. Every other
+        # caller passes a positive number and never noticed.
+        raw = os.environ.get("KAYPY_TEST_MAX_FRAMES")
+        max_frames = int(raw) if raw not in (None, "") else None
         frame_count = 0
+        # The limit below is checked after a frame has been drawn, so a bare
+        # `while` would still run one. Zero has to mean zero: a test that
+        # wants the loop not to run at all is usually one holding a game
+        # object still to look at it.
+        if max_frames == 0:
+            self._running = False
+            return
         while self._running:
             pg_events = pygame.event.get()
             for e in pg_events:
@@ -307,7 +323,10 @@ class Engine:
             shot_path = os.environ.get("KAYPY_SCREENSHOT_PATH")
             if shot_at and shot_path and frame_count == int(shot_at):
                 pygame.image.save(self.screen, shot_path)
-            if max_frames and frame_count >= max_frames:
+            # `is not None`, not a truthiness test: max_frames == 0 means run
+            # no frames, and `if max_frames` reads that as no limit — the same
+            # confusion between "zero" and "unset" that the parsing above had.
+            if max_frames is not None and frame_count >= max_frames:
                 self._running = False
 
             await asyncio.sleep(0)

@@ -202,10 +202,6 @@ the screen.
 
 `kaypy(...)` starts the engine. It has to come first, before anything else.
 
-> If you have a file or a handout that says `kaplay(...)` on that line, it
-> still works — it is the same function under an older name, kept working on
-> purpose. You do not have to change anything.
-
 `loadSprite("bean", "images/bean.png")` makes a picture available under the name
 `bean`. Loading and using are two separate steps, and forgetting the load is the
 commonest reason a sprite doesn't appear.

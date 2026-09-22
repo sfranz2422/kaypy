@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.8.0
+
+**`kaplay()` is gone.** 0.7.0 kept it as an alias for anyone who had already
+written it. Nobody had — the engine has not been in front of a class yet —
+and keeping it meant both exporters carrying two names for one function for
+ever. `kaypy(width=, height=, background=)` is the only way to start a game.
+
+If you have a file from 0.7.0 or earlier that says `kaplay(...)`, change that
+one line. Nothing else moves.
+
+- `webbuild.INIT_NAMES` stays, with one name in it, and so does the test that
+  compares it against what the package exports. The failure it guards is
+  silent: an unrecognised init call falls back to 800×600 and the build
+  reports success, so the wrong canvas only turns up on itch.io. Removing the
+  alias tripped that guard in PyIDE's export test, which is what it is for.
+
+**Fixed: `KAYPY_TEST_MAX_FRAMES=0` meant *unlimited*, not zero frames.**
+`int(os.environ.get(..., "0")) or None` — `int("0")` is falsy, so `or None`
+replaced it, and a second guard read `if max_frames` the same way. Setting it
+to 0 to hold a game still produced a loop that never returned, at interpreter
+exit, with no output and no traceback. Unset still means no limit, because a
+real game runs until it is closed. `tests/test_max_frames.py` pins down all
+three cases.
+
 ## 0.7.0
 
 **The engine starts with `kaypy()`.** The first line of every game said

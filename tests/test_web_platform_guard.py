@@ -34,7 +34,7 @@ pygbag's problem to have solved for its own runtime to work at all —
 plenty of other pygbag games ship fine, so it evidently has). The
 question that's actually kaypy's to answer is: once everything is
 already imported and the swap has already happened, does kaypy() itself
-ever touch atexit? This imports kaplay normally FIRST (so stdlib's own
+ever touch atexit? This imports kaypy normally FIRST (so stdlib's own
 atexit usage happens against the real atexit, matching real execution
 order), then swaps in pygbag's broken module and sets
 sys.platform = "emscripten" before calling kaypy(), the way a real
@@ -48,7 +48,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
-# Import kaplay (and therefore asyncio, logging, etc.) FIRST, against the
+# Import kaypy (and therefore asyncio, logging, etc.) FIRST, against the
 # real atexit — matching real pygbag execution order, where all of that
 # bootstrapping is long done before your game script's kaypy() call runs.
 from kaypy import kaypy, add, pos, rect  # noqa: E402

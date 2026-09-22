@@ -80,7 +80,7 @@ check("the program's namespace outlives the call",
 # ------------------------------------------------- an error in the setup
 reset()
 with Captured() as out:
-    status = webrun.run("from kaypy import *\nkaplay(width=64, height=64)\n"
+    status = webrun.run("from kaypy import *\nkaypy(width=64, height=64)\n"
                         "add([sprite('nope'), pos(0, 0)])\n")
 check("an error in the setup is reported as one", status == "error")
 check("and names the line in the program",
@@ -92,7 +92,7 @@ check("and ends with the exception itself",
 # ---------------------------------------------------------- a syntax error
 reset()
 with Captured() as out:
-    status = webrun.run("from kaypy import *\nkaplay(\n")
+    status = webrun.run("from kaypy import *\nkaypy(\n")
 check("a syntax error is caught before anything runs", status == "error")
 check("and is reported with a line number and the line",
       "SyntaxError on line" in out.text, out.text.strip().splitlines()[0][:60])

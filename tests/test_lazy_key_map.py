@@ -14,7 +14,7 @@ single web export with `AttributeError: module 'pygame' has no attribute
 actually driving a real build in a real browser, not by inspection.
 
 This doesn't (can't, without a WASM pygame build) reproduce the missing
-attribute itself; it proves the actual fix — that kaplay never touches
+attribute itself; it proves the actual fix — that kaypy never touches
 pygame.K_* until something real (onKeyDown/onKeyPress/onKeyRelease, or
 the frame loop) asks for it, which only happens after kaypy() has run
 pygame.init() on every platform, web included.
@@ -37,7 +37,7 @@ print("confirmed: importing kaypy.events never touches pygame.K_*")
 
 import kaypy  # noqa: E402
 
-kaypy.kaplay(width=100, height=100)
+kaypy.kaypy(width=100, height=100)
 assert ev._KEY_MAP is None, "kaypy() itself must not build the key map either"
 print("confirmed: kaypy() (which calls pygame.init()) still doesn't build KEY_MAP")
 
