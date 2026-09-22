@@ -8,7 +8,7 @@ point of it being this short.
 GUIDE.md in the kaypy project walks through thirteen lessons that build
 on this one.
 """
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[141, 183, 255])
 

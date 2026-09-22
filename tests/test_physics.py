@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
-from kaplay import *  # noqa: E402
+from kaypy import *  # noqa: E402
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 setGravity(1600)

@@ -27,7 +27,7 @@ WHY THE TRACEBACK IS TRIMMED
 An error in a game reaches Python with this module, asyncio and the engine
 stacked above the one line the student wrote. Printed whole, the line that
 matters is somewhere in the middle of twenty, and the first thing a beginner
-reads is a frame inside `kaplay/engine.py` — which reliably produces "I think
+reads is a frame inside `kaypy/engine.py` — which reliably produces "I think
 the engine is broken" rather than "I think I made a mistake". So frames
 belonging to Python itself, to asyncio and to kaypy are dropped, and what is
 left is the student's own program.

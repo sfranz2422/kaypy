@@ -18,7 +18,7 @@
   interpreter AND an in-memory filesystem, so the boot code writes those
   strings into that filesystem as real files. By the time the program runs
   there is a package on sys.path and a directory of PNGs, none of which exist
-  on any disk. `import kaplay` is an ordinary import and
+  on any disk. `import kaypy` is an ordinary import and
   `pygame.image.load("images/bean.png")` opens an ordinary file.
 
   That is why the program below is byte for byte what was written. Nothing is
@@ -124,7 +124,7 @@ function decode(b64) {
 
     statusEl.textContent = "Unpacking…";
     Object.keys(ENGINE).forEach(function (rel) {
-      writeFile(py, LIB + "/kaplay/" + rel, ENGINE[rel]);
+      writeFile(py, LIB + "/kaypy/" + rel, ENGINE[rel]);
     });
 
     // The assets land at exactly the paths the program names, under the
@@ -160,10 +160,10 @@ function decode(b64) {
 
     // Two steps, so a mistake in the setup is reported as a mistake in the
     // setup rather than arriving tangled up in the frame loop. Both live in
-    // kaplay/webrun.py, which shipped inside ENGINE above.
+    // kaypy/webrun.py, which shipped inside ENGINE above.
     py.globals.set("_kaypy_source", PROGRAM);
     var status = py.runPython(
-      "from kaplay import webrun\n" +
+      "from kaypy import webrun\n" +
       "webrun.run(_kaypy_source)\n"
     );
     if (status === "ok") {

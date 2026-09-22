@@ -3,7 +3,7 @@
 The guide is the thing students type from, so a sample that doesn't run is
 worse than no sample. This pulls every fenced ```python block out of
 GUIDE.md, keeps the ones that are whole programs (they start with
-`from kaplay import *`), and actually executes each one against the real
+`from kaypy import *`), and actually executes each one against the real
 engine, headless, for a few frames.
 
 It exists because of Lesson 10: its player fell through the floor for a
@@ -31,7 +31,7 @@ BLOCK_RE = re.compile(r"```python\n(.*?)```", re.DOTALL)
 def complete_programs(markdown: str):
     """Whole programs only — fragments are illustrations, not runnable."""
     for i, block in enumerate(BLOCK_RE.findall(markdown), start=1):
-        if block.lstrip().startswith("from kaplay import *"):
+        if block.lstrip().startswith("from kaypy import *"):
             yield i, block
 
 

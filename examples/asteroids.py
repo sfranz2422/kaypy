@@ -13,7 +13,7 @@ things here appear nowhere in the lessons and are the whole point of it:
     Vec2.fromAngle(angle)    which way "forward" is, once it has turned
     a velocity of its own     momentum, so letting go of thrust coasts
 """
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[8, 8, 20])
 

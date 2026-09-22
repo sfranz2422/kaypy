@@ -11,15 +11,15 @@ os.environ.setdefault("KAYPY_TEST_MAX_FRAMES", "5")  # this script never calls r
 # it finishes and lets the atexit-triggered loop run for a few frames, so
 # it's exercising the same "script just ends" path every lesson relies on.
 
-from kaplay import *  # noqa: E402
-from kaplay.engine import current_engine  # noqa: E402
+from kaypy import *  # noqa: E402
+from kaypy.engine import current_engine  # noqa: E402
 
 kaplay(width=400, height=400, background=[0, 0, 0])
 
 # ---- child objects follow their parent -----------------------------------
 parent = add([pos(50, 50), rect(10, 10)])
 child = parent.add([pos(5, 5), rect(4, 4)])
-from kaplay.geometry import get_world_pos  # noqa: E402
+from kaypy.geometry import get_world_pos  # noqa: E402
 wp = get_world_pos(child)
 assert (wp.x, wp.y) == (55, 55), f"child should be at parent+offset, got {wp}"
 parent.pos.x = 100

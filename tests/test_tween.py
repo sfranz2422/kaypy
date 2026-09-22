@@ -22,9 +22,9 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from kaplay import kaplay, vec2, easings                      # noqa: E402
-from kaplay.easings import ALL                                # noqa: E402
-import kaplay.engine as ke                                    # noqa: E402
+from kaypy import kaplay, vec2, easings                      # noqa: E402
+from kaypy.easings import ALL                                # noqa: E402
+import kaypy.engine as ke                                    # noqa: E402
 
 results = []
 

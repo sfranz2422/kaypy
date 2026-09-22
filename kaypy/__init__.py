@@ -1,7 +1,12 @@
-"""from kaplay import * — every name here is Kaplay's own name, in
-Kaplay's own order, with Kaplay's own arguments. The Kaplay documentation
-and every Kaplay example on the internet applies to what you write here;
+"""from kaypy import * — every name here is KAPLAY's own name, in
+KAPLAY's own order, with KAPLAY's own arguments. The KAPLAY documentation
+and every KAPLAY example on the internet applies to what you write here;
 only the language underneath (real, native Python, via pygame-ce) is new.
+
+kaypy is an independent project and is not affiliated with, endorsed by, or
+produced by the KAPLAY team. It matches their API deliberately, because that
+is what makes their documentation useful to a Python class — but it is a
+separate implementation, and its bugs are its own.
 """
 from .vec2 import vec2, Vec2
 from .engine import Engine, current_engine, rand, randi, choose

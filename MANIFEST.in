@@ -1,6 +1,6 @@
 # The sdist should be enough to build AND verify kaypy from, not just build
 # it — so the guide, the developer notes, the lessons and the tests all
-# travel with it. (The wheel stays lean: it gets kaplay/ and nothing else.)
+# travel with it. (The wheel stays lean: it gets kaypy/ and nothing else.)
 include LICENSE
 include README.md
 include CHANGELOG.md
@@ -9,10 +9,10 @@ include DEVELOPING.md
 include webbuild.py
 recursive-include examples *.py *.png *.wav *.md
 recursive-include tests *.py
-recursive-include kaplay/starter *
+recursive-include kaypy/starter *
 # examples/sounds is the one copy of the lesson audio in this repo, and it is
-# what `kaypy new` fetches. kaplay/starter/sounds was a byte-identical second
+# what `kaypy new` fetches. kaypy/starter/sounds was a byte-identical second
 # copy; it is pruned here so neither the sdist nor the wheel carries it.
-prune kaplay/starter/sounds
+prune kaypy/starter/sounds
 global-exclude __pycache__ *.pyc
 prune web_build

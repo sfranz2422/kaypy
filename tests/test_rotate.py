@@ -33,7 +33,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import pygame                                                 # noqa: E402
-from kaplay.render import _blit                               # noqa: E402
+from kaypy.render import _blit                               # noqa: E402
 
 pygame.init()
 
@@ -128,9 +128,9 @@ for angle in (0, 73, 200):
           "drifted (%d, %d)" % off)
 
 # ---------------------------------------------------------- the component
-from kaplay import (kaplay, add, rect, circle, pos, area, rotate,  # noqa: E402
+from kaypy import (kaplay, add, rect, circle, pos, area, rotate,  # noqa: E402
                     anchor, vec2)
-import kaplay.engine as ke                                       # noqa: E402
+import kaypy.engine as ke                                       # noqa: E402
 
 eng = kaplay(width=200, height=200)
 spinner = add([rect(40, 20), pos(100, 100), anchor("center"), area(), rotate(0)])
@@ -152,7 +152,7 @@ check("the collision box does not rotate with it",
       % (upright.width, upright.height, turned.width, turned.height))
 
 # Vec2.fromAngle is the partner to rotate(): "which way am I facing".
-from kaplay import Vec2                                          # noqa: E402
+from kaypy import Vec2                                          # noqa: E402
 
 for deg, name, want in ((0, "right", (1, 0)), (90, "down", (0, 1)),
                         (180, "left", (-1, 0)), (270, "up", (0, -1))):

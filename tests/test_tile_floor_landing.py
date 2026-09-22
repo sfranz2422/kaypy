@@ -32,10 +32,10 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "1"
 
-from kaplay import (  # noqa: E402
+from kaypy import (  # noqa: E402
     kaplay, add, pos, rect, area, body, anchor, setGravity,
 )
-from kaplay.engine import current_engine  # noqa: E402
+from kaypy.engine import current_engine  # noqa: E402
 
 TILE = 64
 FLOOR_TOP = 384

@@ -3,7 +3,7 @@
     python3 tests/test_readme_code.py
 
 `test_guide_code.py` covers GUIDE.md, but only its *whole programs* — blocks
-that begin `from kaplay import *`. The README is almost entirely fragments, so
+that begin `from kaypy import *`. The README is almost entirely fragments, so
 until now nothing checked it at all, and the README is the first thing anyone
 reads. A broken snippet there is the first impression.
 
@@ -38,7 +38,7 @@ BLOCK_RE = re.compile(r"```python\n(.*?)```", re.DOTALL)
 # not stubs: a snippet that calls player.jump() should fail here if body()
 # stops providing jump().
 PREAMBLE = """
-from kaplay import *
+from kaypy import *
 
 kaplay(width=320, height=240)
 
@@ -95,10 +95,10 @@ for i, block in enumerate(blocks, 1):
         print("  skip %-46s %s" % (first_line(block), SKIP[i]))
         continue
 
-    whole = block.lstrip().startswith("from kaplay import *")
+    whole = block.lstrip().startswith("from kaypy import *")
     source = block if whole else PREAMBLE + "\n" + block
 
-    import kaplay.engine as ke
+    import kaypy.engine as ke
     ke._engine = None
     try:
         exec(compile(source, "README block %d" % i, "exec"), {})

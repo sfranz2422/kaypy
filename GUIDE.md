@@ -13,6 +13,10 @@ through [pygame-ce](https://pyga.me). Nothing is transpiled and there is no
 JavaScript involved. The same file you run on your machine is the one that
 becomes a web page.
 
+> kaypy is an independent project, not affiliated with or endorsed by the
+> KAPLAY team. It follows their API on purpose — that is what lets their
+> documentation answer your questions — but it is a separate implementation.
+
 ---
 
 ## Getting started
@@ -20,7 +24,7 @@ becomes a web page.
 Every game in this guide is an ordinary Python file that begins:
 
 ```python
-from kaplay import *
+from kaypy import *
 ```
 
 That line brings in every Kaplay name. Everything else follows from it.
@@ -177,7 +181,7 @@ text — is a **game object**. You build one out of **components**, and each
 component gives it one ability.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -226,7 +230,7 @@ There are many more components. You will meet most of them in the lessons below.
 Input handling and moving things about.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -304,7 +308,7 @@ picture.
 ## 3 — Collision handling
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -442,7 +446,7 @@ needs a `pos()` to say where it goes.
 ## 5 — Gravity
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -526,7 +530,7 @@ dino walk cycle — `dino_0` through `dino_8` — so you can build one from the
 frames you already have:
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -672,7 +676,7 @@ A scene is one part of your game: a menu, the game itself, a game-over screen.
 Each one is a function, and `go()` switches between them.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600)
 setBackground(0, 0, 0)
@@ -821,7 +825,7 @@ silently. This is the one Python-specific gotcha in the whole guide.
 ## 8 — Audio and buttons
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -896,7 +900,7 @@ Kaplay has its own timers. Use them instead of Python's, because Kaplay's are
 tied to the frame loop and stay in step with the game.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 
@@ -942,7 +946,7 @@ Drawing a map by hand gets old fast. `addLevel()` lets you draw it as a picture
 made of characters.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[141, 183, 255])
 
@@ -1048,7 +1052,7 @@ the same length.
 When the level is bigger than the window, the camera follows the player.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[141, 183, 255])
 
@@ -1258,7 +1262,7 @@ A state machine gives an object a **mode** — idle, attack, move — and differ
 behaviour in each. It is how nearly all simple game AI is written.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[0, 0, 0])
 

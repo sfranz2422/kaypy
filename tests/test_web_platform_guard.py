@@ -3,7 +3,7 @@
     python3 tests/test_web_platform_guard.py
 
 The rule outlives the reason it was written for. On the web, something else
-calls run_async() explicitly — kaplay/webrun.py — and an atexit handler in a
+calls run_async() explicitly — kaypy/webrun.py — and an atexit handler in a
 tab whose interpreter never exits is a frame loop that never starts. So
 kaplay() checks the platform and skips atexit there, and this proves the check
 is really in the code path rather than in a comment about it.
@@ -51,8 +51,8 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 # Import kaplay (and therefore asyncio, logging, etc.) FIRST, against the
 # real atexit — matching real pygbag execution order, where all of that
 # bootstrapping is long done before your game script's kaplay() call runs.
-from kaplay import kaplay, add, pos, rect  # noqa: E402
-from kaplay.engine import current_engine  # noqa: E402
+from kaypy import kaplay, add, pos, rect  # noqa: E402
+from kaypy.engine import current_engine  # noqa: E402
 
 # --- NOW recreate pygbag's actual buggy atexit shim verbatim ---------------
 fake_atexit = types.ModuleType("atexit")

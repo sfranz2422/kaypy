@@ -47,7 +47,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from kaplay import webbuild                                     # noqa: E402
+from kaypy import webbuild                                     # noqa: E402
 
 results = []
 
@@ -66,7 +66,7 @@ def done(code=None):
 
 # A program that uses a sprite, a sound, a key, a collision and a timer, so
 # that "it ran" means several different things went right rather than one.
-GAME = '''from kaplay import *
+GAME = '''from kaypy import *
 
 kaplay(width=320, height=240, background=[24, 24, 40])
 loadSprite("bean", "images/bean.png")
@@ -251,7 +251,7 @@ check("nothing inlined can end a block early",
 # --------------------------------------------- unpack it, as the page does
 # Where things go is read out of the page, not decided here.
 asset_dir = re.search(r'writeFile\(py, PROJECT \+ "/" \+ path', page)
-engine_dir = re.search(r'writeFile\(py, LIB \+ "/kaplay/" \+ rel', page)
+engine_dir = re.search(r'writeFile\(py, LIB \+ "/kaypy/" \+ rel', page)
 lib_path = re.search(r'var LIB = "([^"]+)"', page)
 project_path = re.search(r'var PROJECT = "([^"]+)"', page)
 check("the page says where the engine goes", engine_dir and lib_path,
@@ -265,7 +265,7 @@ root = work / "root"
 lib = root / lib_path.group(1).strip("/")
 project = root / project_path.group(1).strip("/")
 for rel, text in engine.items():
-    target = lib / "kaplay" / rel
+    target = lib / "kaypy" / rel
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(text)
 for path, b64 in assets.items():
@@ -274,21 +274,21 @@ for path, b64 in assets.items():
     target.write_bytes(base64.b64decode(b64))
 
 check("the engine unpacks into an importable package",
-      (lib / "kaplay" / "__init__.py").is_file())
+      (lib / "kaypy" / "__init__.py").is_file())
 check("the assets land where the program will look",
       (project / "images/bean.png").is_file() and (project / "sounds/ding.wav").is_file())
 
 # ---------------------------------------------------------- and run it
 # From the unpacked copy, not from this checkout: the point is that what the
 # page carries is enough on its own.
-for name in [m for m in sys.modules if m == "kaplay" or m.startswith("kaplay.")]:
+for name in [m for m in sys.modules if m == "kaypy" or m.startswith("kaypy.")]:
     del sys.modules[name]
 sys.path.insert(0, str(lib))
 os.chdir(project)
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "30"
 
-from kaplay import webrun as unpacked_webrun                    # noqa: E402
-import kaplay.engine as unpacked_engine                         # noqa: E402
+from kaypy import webrun as unpacked_webrun                    # noqa: E402
+import kaypy.engine as unpacked_engine                         # noqa: E402
 
 check("the engine imported is the one out of the page",
       pathlib.Path(unpacked_webrun.__file__).is_relative_to(lib),

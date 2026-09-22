@@ -7,7 +7,7 @@ WHY THE SOUNDS MOVED OUT
 The wheel was 1.36 MB, of which 92 KB was the engine and 2.6 MB uncompressed
 was three .wav files — one background.wav accounting for most of it. Every
 `pip install kaypy` anywhere paid for audio that exactly one lesson plays. Two
-copies of those files were in the repo as well: `kaplay/starter/sounds/` and
+copies of those files were in the repo as well: `kaypy/starter/sounds/` and
 `examples/sounds/`, byte for byte identical.
 
 So `kaypy new` fetches them, and the install is 112 KB.
@@ -42,7 +42,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from kaplay import cli                                        # noqa: E402
+from kaypy import cli                                        # noqa: E402
 
 results = []
 
@@ -53,7 +53,7 @@ def check(label, ok, detail=""):
 
 
 # ---------------------------------------------------------- what ships
-STARTER = ROOT / "kaplay" / "starter"
+STARTER = ROOT / "kaypy" / "starter"
 check("the starter game is still in the package",
       (STARTER / "game.py").is_file())
 check("so are the sprites",
@@ -63,7 +63,7 @@ check("and the dungeon atlas", (STARTER / "dungeon.png").is_file())
 check("the sounds are NOT in the package",
       not (STARTER / "sounds").exists()
       or not list((STARTER / "sounds").glob("*.wav")),
-      "kaplay/starter/sounds should be gone")
+      "kaypy/starter/sounds should be gone")
 check("the one copy of them is examples/sounds",
       len(list((ROOT / "examples" / "sounds").glob("*.wav"))) == len(cli.SOUNDS))
 

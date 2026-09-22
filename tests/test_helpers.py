@@ -6,7 +6,7 @@ None of these is load-bearing on its own. Together they are the difference
 between a Kaplay example found on the internet running as written and dying on
 its third line with a NameError — and "KAPLAY's documentation still tells you
 what to write" is only true while the names in it exist. So the first check is
-simply that `from kaplay import *` brings every one of them in, which is the
+simply that `from kaypy import *` brings every one of them in, which is the
 failure a student would actually hit.
 """
 import math
@@ -20,11 +20,11 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-# Aliased, because `from kaplay import *` binds the NAME kaplay to the
+# Aliased, because `from kaypy import *` binds the NAME kaplay to the
 # kaplay() function and would shadow the module itself.
-import kaplay as _mod                                         # noqa: E402
-import kaplay.engine as ke                                    # noqa: E402
-from kaplay import *                                          # noqa: E402,F403
+import kaypy as _mod                                         # noqa: E402
+import kaypy.engine as ke                                    # noqa: E402
+from kaypy import *                                          # noqa: E402,F403
 
 results = []
 

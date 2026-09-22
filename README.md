@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/kaypy.svg)](https://pypi.org/project/kaypy/)
 [![Python versions](https://img.shields.io/pypi/pyversions/kaypy.svg)](https://pypi.org/project/kaypy/)
-[![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/sfranz2422/kaypy/blob/main/LICENSE)
 
 **A real-Python game engine with [KAPLAY](https://kaplayjs.com)'s API — runs on your
 machine, exports to the browser.**
@@ -52,7 +52,7 @@ nothing and ends with a state-machine enemy AI — the Learn Kaplay lessons,
 written for Python.
 
 ```python
-from kaplay import *
+from kaypy import *
 
 kaplay(width=800, height=600, background=[141, 183, 255])
 
@@ -273,7 +273,7 @@ Python 3.10 or newer, and `pygame-ce` is the only dependency. There is nothing
 else to install for the web export — it used to need `pygbag` and an `ffmpeg`
 to convert sounds, and needs neither now.
 
-`pip install kaypy` gives you two things: the `kaplay` package to import, and a
+`pip install kaypy` gives you two things: the `kaypy` package to import, and a
 `kaypy` command with three subcommands.
 
 | Command | What it does |
@@ -330,10 +330,10 @@ afterwards. Embedding them would make every game tens of megabytes.
 | `--title "..."` | the browser tab's title (default: the script's name) |
 | `--out FILE` | write somewhere other than `web_build/<name>.html` |
 | `--assets a b` | copy these too, for paths your script builds at runtime |
-| `--out DIR` | write somewhere other than `web_build/<script name>` |
 
-The first web build downloads a WebAssembly Python runtime, so it needs
-ordinary internet access. After that it's local.
+Building needs no internet at all — it is your own machine, your own files,
+and the engine already installed. Only *playing* a built game fetches
+anything, and only Python itself, once.
 
 Your game file doesn't change between the two targets — no `if` on the
 platform, no separate build of your code. The same `game.py` that opens a window
@@ -552,8 +552,17 @@ it stopped using pygbag.
 
 ## Credits
 
+**kaypy is an independent project.** It is not affiliated with, endorsed by, or
+produced by the KAPLAY team. It follows KAPLAY's published API on purpose, so
+that KAPLAY's documentation and examples tell you what to write — but it is a
+separate implementation in Python, and bugs in it are mine, not theirs.
+
 KAPLAY's API design, and its documentation, which this follows deliberately and
 closely. Built on [pygame-ce](https://pyga.me); the web export runs on
 [Pyodide](https://pyodide.org). It was built on
 [pygbag](https://github.com/pygame-web/pygbag) first, which is what made a
 browser build possible at all while this was finding its feet.
+
+The bundled sprites and sounds come from KAPLAY (MIT) and 0x72's
+DungeonTileset II (CC0). Full terms travel with the files, in
+`examples/CREDITS.md`.

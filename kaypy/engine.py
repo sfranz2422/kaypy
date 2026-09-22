@@ -20,7 +20,7 @@ the game had drawn a frame. tests/test_web_platform_guard.py still holds
 that line down.
 
 Whatever starts the game on the web calls run_async() explicitly
-instead. That is kaplay/webrun.py, which is what the page built by
+instead. That is kaypy/webrun.py, which is what the page built by
 `kaypy web` calls, and what a browser IDE embedding kaypy calls too."""
 from __future__ import annotations
 import asyncio
@@ -99,7 +99,7 @@ class Engine:
         self._height = height
         self._background = tuple(background)
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("kaplay")
+        pygame.display.set_caption("kaypy")
         self.clock = pygame.time.Clock()
 
         self.assets = AssetManager()
@@ -226,7 +226,7 @@ class Engine:
 
     def run(self):
         """Starts the frame loop by driving it with a fresh asyncio.run().
-        On native, kaplay scripts never need to call this themselves — it
+        On native, kaypy scripts never need to call this themselves — it
         fires automatically once the script body finishes (see the atexit
         registration in __init__) — but it's safe (and a no-op the second
         time) to call explicitly too. Not for use under pygbag: the web

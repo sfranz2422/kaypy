@@ -12,7 +12,7 @@ _DIGITS = "0123456789"
 # Native pygame-ce's pygame.K_LEFT and friends are plain constants, there the
 # moment you `import pygame` and before pygame.init() ever runs. A WASM build
 # of pygame need not be: one of them (pygbag 0.9.3's) did not populate them
-# until after init(). `import kaplay` reaches this module — via engine.py's
+# until after init(). `import kaypy` reaches this module — via engine.py's
 # `from .events import EventManager` — long before a script's own kaplay()
 # call gets as far as pygame.init(), so building the map eagerly here crashed
 # every web export with `AttributeError: module 'pygame' has no attribute

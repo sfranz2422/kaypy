@@ -73,7 +73,7 @@ class GameObj:
     def comp(self, comp_id: str):
         return self._comps.get(comp_id)
 
-    # ---- kaplay-style attribute delegation ---------------------------------
+    # ---- KAPLAY-style attribute delegation ---------------------------------
 
     def __getattr__(self, name):
         # __getattr__ only fires when normal attribute lookup fails,

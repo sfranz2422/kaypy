@@ -12,7 +12,7 @@ easings.net, which is where Kaplay's came from too.
 
 Reached as an object — `easings.easeOutBounce` — rather than as thirty-one
 loose names, because that is how Kaplay spells it and because
-`from kaplay import *` should not put `easeInOutQuint` in a student's
+`from kaypy import *` should not put `easeInOutQuint` in a student's
 namespace.
 """
 import math

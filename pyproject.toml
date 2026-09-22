@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools>=68"]
+# >= 77 because of PEP 639: the `license = "MIT"` expression and
+# `license-files` below are only understood from that version. An older
+# setuptools reads `license` as free text instead and quietly emits
+# legacy metadata — the build succeeds, and the wheel is wrong.
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -47,27 +51,27 @@ Repository = "https://github.com/sfranz2422/kaypy"
 Documentation = "https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md"
 
 [project.scripts]
-kaypy = "kaplay.cli:main"
+kaypy = "kaypy.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["kaplay*"]
+include = ["kaypy*"]
 
 [tool.setuptools.package-data]
 # The page `kaypy web` builds from. It is data, not code, so it needs naming
 # here or a wheel would install an engine that cannot export anything — and
 # the failure would be at a student's machine, not at build time.
-"kaplay" = ["web_page.html"]
+"kaypy" = ["web_page.html"]
 # The starter game and its sprites ship inside the package, so `kaypy new
 # mygame` produces something that runs without a checkout and without a
 # network. The sounds do NOT: they are 2.6 MB against the engine's 92 KB, and
-# only one lesson plays audio, so `kaypy new` fetches them (see kaplay/cli.py)
+# only one lesson plays audio, so `kaypy new` fetches them (see kaypy/cli.py)
 # and every install that never needs them stops paying for them.
-"kaplay.starter" = ["*.py", "*.png", "*.md", "images/*", "dungeon/*"]
+"kaypy.starter" = ["*.py", "*.png", "*.md", "images/*", "dungeon/*"]
 
 [tool.setuptools.exclude-package-data]
 # Belt and braces. Narrowing package-data above is not enough on its own:
 # include-package-data is on by default, so anything MANIFEST.in sweeps up
 # lands in the wheel regardless of package-data. This is what actually keeps
 # the sounds out, and it keeps them out even if a copy reappears under
-# kaplay/starter/ one day.
-"kaplay.starter" = ["sounds/*"]
+# kaypy/starter/ one day.
+"kaypy.starter" = ["sounds/*"]

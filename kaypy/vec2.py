@@ -119,7 +119,7 @@ _UNSET = object()
 
 
 def vec2(x=0.0, y=_UNSET):
-    """kaplay's vec2(x, y). Also accepts vec2(vec2), vec2((x, y)), and vec2(n) for (n, n)."""
+    """KAPLAY's vec2(x, y). Also accepts vec2(vec2), vec2((x, y)), and vec2(n) for (n, n)."""
     if isinstance(x, Vec2):
         return Vec2(x.x, x.y)
     if isinstance(x, (tuple, list)) and len(x) == 2:

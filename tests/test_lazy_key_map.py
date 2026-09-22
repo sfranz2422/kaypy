@@ -1,12 +1,12 @@
-"""Standalone sanity script: proves kaplay/events.py's key-name map is
-built lazily, on first real use, rather than at `import kaplay` time.
+"""Standalone sanity script: proves kaypy/events.py's key-name map is
+built lazily, on first real use, rather than at `import kaypy` time.
 
 Why this matters: pygame-ce's pygame.K_LEFT etc. are plain constants on
 native CPython, available the instant you `import pygame`, well before
 pygame.init() runs — so building a dict of them right at module level
 (as events.py used to) is completely safe there. But pygbag's WASM build
 of pygame apparently doesn't populate those attributes until AFTER
-pygame.init() — and `import kaplay` reaches kaplay/events.py (via
+pygame.init() — and `import kaypy` reaches kaypy/events.py (via
 engine.py's `from .events import EventManager`) before a script's own
 kaplay() call has had a chance to run pygame.init(). That crashed every
 single web export with `AttributeError: module 'pygame' has no attribute
@@ -27,21 +27,21 @@ os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "1"
 
-import kaplay.events as ev  # noqa: E402
+import kaypy.events as ev  # noqa: E402
 
 assert ev._KEY_MAP is None, (
     "KEY_MAP was built at import time — this crashes on pygbag's WASM "
     "pygame build, which doesn't populate pygame.K_* until pygame.init()"
 )
-print("confirmed: importing kaplay.events never touches pygame.K_*")
+print("confirmed: importing kaypy.events never touches pygame.K_*")
 
-import kaplay  # noqa: E402
+import kaypy  # noqa: E402
 
-kaplay.kaplay(width=100, height=100)
+kaypy.kaplay(width=100, height=100)
 assert ev._KEY_MAP is None, "kaplay() itself must not build the key map either"
 print("confirmed: kaplay() (which calls pygame.init()) still doesn't build KEY_MAP")
 
-kaplay.onKeyDown("left", lambda: None)
+kaypy.onKeyDown("left", lambda: None)
 assert ev._KEY_MAP is not None, "the key map should build on its first real use"
 assert ev.resolve_key("left") is not None
 print("confirmed: KEY_MAP builds lazily on first onKeyDown/onKeyPress/onKeyRelease call")

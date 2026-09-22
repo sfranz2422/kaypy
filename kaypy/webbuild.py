@@ -18,10 +18,10 @@ so nothing is carried that the game never loads.
 
 Pyodide brings a Python interpreter and an in-memory filesystem, so the page
 writes the engine and the assets into that filesystem as real files before the
-program starts. `import kaplay` is then an ordinary import and
+program starts. `import kaypy` is then an ordinary import and
 `pygame.image.load("images/bean.png")` opens an ordinary file — which is why
 the program goes in byte for byte, with no paths rewritten. The page itself is
-kaplay/web_page.html; it is worth reading if you want the details.
+kaypy/web_page.html; it is worth reading if you want the details.
 
 THE ONE THING IT FETCHES
 
@@ -68,8 +68,8 @@ from pathlib import Path
 # Where the engine itself lives. Under `pip install kaypy` this is inside
 # site-packages, not a repo checkout, which is why it is resolved from this
 # module rather than from a project directory.
-KAPLAY_PKG = Path(__file__).resolve().parent
-PAGE_TEMPLATE = KAPLAY_PKG / "web_page.html"
+PKG_DIR = Path(__file__).resolve().parent
+PAGE_TEMPLATE = PKG_DIR / "web_page.html"
 
 PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v314.0.6/full/"
 
@@ -136,12 +136,12 @@ def engine_files() -> dict[str, str]:
 
     Text, not bytes: every file in it is Python. The page writes each one
     into Pyodide's filesystem so that a traceback through the engine names
-    kaplay/engine.py and a line number that exists, rather than pointing at
+    kaypy/engine.py and a line number that exists, rather than pointing at
     some string that was exec'd.
     """
     files: dict[str, str] = {}
-    for path in sorted(KAPLAY_PKG.rglob("*.py")):
-        rel = path.relative_to(KAPLAY_PKG)
+    for path in sorted(PKG_DIR.rglob("*.py")):
+        rel = path.relative_to(PKG_DIR)
         if set(rel.parts) & SKIP_DIRS:
             continue
         files[str(rel).replace("\\", "/")] = path.read_text()
@@ -206,7 +206,7 @@ def build_page(game_script: Path, extra_assets: list[Path], title: str | None,
     missing = [name for name in slots if name not in page]
     if missing:
         raise SystemExit("the page template has no %s slot — "
-                         "kaplay/web_page.html and this file disagree."
+                         "kaypy/web_page.html and this file disagree."
                          % ", ".join(missing))
 
     # ONE pass, not one replace() per slot.

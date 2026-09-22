@@ -19,7 +19,7 @@
 - **Nothing is downloaded at build time.** pygbag fetched a WASM runtime from
   pygame-web.github.io to build with. Building now needs no network at all;
   only *playing* a built game does, once, for Python itself.
-- **New: `kaplay/webrun.py`**, the two halves of a run — `run(source)` for the
+- **New: `kaypy/webrun.py`**, the two halves of a run — `run(source)` for the
   program's top level and `await drive()` for the frame loop — plus traceback
   trimming that drops asyncio, the standard library and the engine's own frames
   so the first thing a student reads is their own line. It is a real module
@@ -32,7 +32,7 @@
   with a grey box under it reading "pygame-ce 2.5.8 (SDL 2.32.10, ...)". An
   error still shows on the page, because a blank canvas that explains nothing
   is worse than a red box that does.
-- **New: `kaplay/web_page.html`**, the page itself. Shipped as package data,
+- **New: `kaypy/web_page.html`**, the page itself. Shipped as package data,
   which means an editor that vendors kaypy can build exactly the same page
   rather than keeping its own copy in step by hand.
 - `--serve` is now opt-in rather than automatic, since a built file opens on

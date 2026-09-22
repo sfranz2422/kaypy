@@ -9,26 +9,26 @@ For how to *use* the engine, see [README.md](README.md).
 
 ## Architecture
 
-- **`kaplay/gameobj.py`** — `GameObj` merges each component's attributes onto
+- **`kaypy/gameobj.py`** — `GameObj` merges each component's attributes onto
   itself via `__getattr__`/`__setattr__` delegation, the same way KAPLAY's JS
   does `Object.assign`. Calling `.jump()` on an object without `body()` raises
   exactly the `AttributeError` the guide's troubleshooting section describes.
-- **`kaplay/comps/`** — one file per component family. Components are data
+- **`kaypy/comps/`** — one file per component family. Components are data
   holders with optional `add`/`update`/`destroy` hooks; nothing draws itself.
-- **`kaplay/geometry.py`** — the one place that turns `pos()` + `anchor()` +
+- **`kaypy/geometry.py`** — the one place that turns `pos()` + `anchor()` +
   `scale()` + parent offsets into a world-space rect. Both collision
   (`area.py`) and rendering (`render.py`) call into it, so "does this touch
   that" and "where does this draw" can never disagree.
-- **`kaplay/physics.py`** — gravity and integration, then AABB overlap and
+- **`kaypy/physics.py`** — gravity and integration, then AABB overlap and
   resolution. Physical pushback only happens between two objects that **both**
   have `body()`; a coin or enemy with only `area()` is a pass-through trigger,
   per Lesson 3. Collision rects are `pygame.FRect` (float precision) rather
   than `pygame.Rect` — a resting object's sub-pixel gravity drift would
   otherwise round away and make `isGrounded()` flicker.
-- **`kaplay/engine.py`** — the `Engine` singleton: window, clock, asset/event/
+- **`kaypy/engine.py`** — the `Engine` singleton: window, clock, asset/event/
   timer managers, camera, and the frame loop. The loop is `asyncio`-shaped so
   the same body drives both the native run and the browser build.
-- **`kaplay/render.py`** — draws sprite/rect/circle/text in `z()` order,
+- **`kaypy/render.py`** — draws sprite/rect/circle/text in `z()` order,
   through the camera unless `fixed()`.
 
 ### How the loop starts
@@ -164,15 +164,15 @@ decorator gain doesn't require giving it up.
 
 ## Web export
 
-`kaplay/webbuild.py` builds **one HTML file**: it reads the game script to find
+`kaypy/webbuild.py` builds **one HTML file**: it reads the game script to find
 the assets it names, base64s those, JSONs the engine, and fills all of it into
-`kaplay/web_page.html`. The page writes the engine and the assets into
-Pyodide's in-memory filesystem before running the program, so `import kaplay`
+`kaypy/web_page.html`. The page writes the engine and the assets into
+Pyodide's in-memory filesystem before running the program, so `import kaypy`
 is an ordinary import and `pygame.image.load("images/bean.png")` opens an
 ordinary file — which is why the program is carried byte for byte with no
 paths rewritten.
 
-The two halves of a run live in `kaplay/webrun.py`, not in the page: `run()`
+The two halves of a run live in `kaypy/webrun.py`, not in the page: `run()`
 for the program's top level, `await drive()` for the frame loop. Real Python in
 a real module, so it can be tested and so a browser IDE embedding kaypy calls
 exactly the same code the page does.
@@ -226,7 +226,7 @@ Without it, `import pygame` still silently succeeds, but you get a stub with
 the constants (`pygame.K_LEFT` and friends) and **none of the real functions**.
 
 Ordinary pygbag games never hit this, because they write `import pygame` at the
-top of their own `main.py`. A kaypy game never writes it at all — `kaplay` does
+top of their own `main.py`. A kaypy game never writes it at all — `kaypy` does
 that internally, several imports removed from anything pygbag's scanner reads —
 so that block could only ever come from the generated `main.py`, and now does.
 
@@ -237,10 +237,10 @@ Symptom: the page loaded, the click did nothing, and the crash was
 
 ### 3. `pygame.K_*` read at import time
 
-`kaplay/events.py` used to build its key-name lookup table at module level.
+`kaypy/events.py` used to build its key-name lookup table at module level.
 Native pygame-ce doesn't care — those constants exist the moment you
 `import pygame`, before `pygame.init()`. Under pygbag's WASM pygame they don't
-exist until after `init()`, and `import kaplay` reaches `events.py` (via
+exist until after `init()`, and `import kaypy` reaches `events.py` (via
 `engine.py`'s `from .events import EventManager`) well before a script's own
 `kaplay()` call runs `pygame.init()`. Every web export died with
 `AttributeError: module 'pygame' has no attribute 'K_LEFT'` before a single
@@ -398,7 +398,7 @@ that depends on 2.5.8-specific behaviour will diverge in the browser.
 The wheel was 1.36 MB. Of that, 92 KB was the engine and 2.6 MB uncompressed
 was three `.wav` files, mostly one `background.wav`. Every `pip install kaypy`
 anywhere paid for audio that exactly one lesson plays. They were also in the
-repo twice — `kaplay/starter/sounds/` and `examples/sounds/`, byte for byte
+repo twice — `kaypy/starter/sounds/` and `examples/sounds/`, byte for byte
 identical.
 
 So `examples/sounds/` is now the one copy, `kaypy new` fetches from it over

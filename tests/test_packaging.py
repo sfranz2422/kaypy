@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-STARTER = REPO_ROOT / "kaplay" / "starter"
+STARTER = REPO_ROOT / "kaypy" / "starter"
 EXAMPLES = REPO_ROOT / "examples"
 
 # The sounds are deliberately not here: they are 2.6 MB against the engine's
@@ -50,18 +50,18 @@ for name in ["dungeon.png", "CREDITS.md"]:
         mismatched.append(name)
 
 assert not missing, (
-    f"bundled in kaplay/starter/ but missing: {missing} — `kaypy new` would "
+    f"bundled in kaypy/starter/ but missing: {missing} — `kaypy new` would "
     f"produce a game whose assets aren't all there"
 )
 assert not mismatched, (
-    f"kaplay/starter/ has drifted from examples/: {mismatched} — the copy "
+    f"kaypy/starter/ has drifted from examples/: {mismatched} — the copy "
     f"students get is no longer the copy the lessons were checked against"
 )
 
 # The sounds are not bundled, so the thing that can drift is the LIST of them
 # in the CLI: fetching a name that examples/sounds hasn't got would fail at a
 # student's machine and nowhere else.
-from kaplay import cli                                        # noqa: E402
+from kaypy import cli                                        # noqa: E402
 
 on_disk = {p.name for p in (EXAMPLES / "sounds").glob("*.wav")}
 assert set(cli.SOUNDS) == on_disk, (
@@ -69,13 +69,13 @@ assert set(cli.SOUNDS) == on_disk, (
     f"{sorted(on_disk)} — one of the two has moved on without the other"
 )
 assert not (STARTER / "sounds").exists(), (
-    "kaplay/starter/sounds is back — that is 2.6 MB inside every wheel again"
+    "kaypy/starter/sounds is back — that is 2.6 MB inside every wheel again"
 )
-print(f"confirmed: kaplay/starter assets match examples/ ({len(ASSET_DIRS)} folders + atlas)")
+print(f"confirmed: kaypy/starter assets match examples/ ({len(ASSET_DIRS)} folders + atlas)")
 
 
 # --- 2. `kaypy new` makes something that runs ---------------------------
-from kaplay import cli  # noqa: E402
+from kaypy import cli  # noqa: E402
 
 env = dict(os.environ)
 env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy",
@@ -103,14 +103,14 @@ with tempfile.TemporaryDirectory() as tmp:
 
 
 # --- 3. the web builder resolves the engine through the package ---------
-from kaplay import webbuild  # noqa: E402
+from kaypy import webbuild  # noqa: E402
 
-assert (webbuild.KAPLAY_PKG / "engine.py").is_file(), (
-    f"webbuild looks for the engine in {webbuild.KAPLAY_PKG}, which has no "
+assert (webbuild.PKG_DIR / "engine.py").is_file(), (
+    f"webbuild looks for the engine in {webbuild.PKG_DIR}, which has no "
     f"engine.py — an install would copy the wrong thing, or nothing"
 )
-assert webbuild.KAPLAY_PKG.name == "kaplay", \
-    f"expected the package directory, got {webbuild.KAPLAY_PKG}"
+assert webbuild.PKG_DIR.name == "kaypy", \
+    f"expected the package directory, got {webbuild.PKG_DIR}"
 
 # The page template is data, not code, so an install only has it because
 # pyproject.toml names it in package-data. Get that wrong and the wheel

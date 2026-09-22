@@ -2,7 +2,7 @@
 
     python3 tests/test_webrun.py
 
-kaplay/webrun.py is the two halves of a run — the program's top level, then
+kaypy/webrun.py is the two halves of a run — the program's top level, then
 the frame loop — plus the traceback trimming. The trimming is the part worth
 testing hardest, because it is the only thing a student sees when their game
 does not work, and because trimming too much is a silent failure of its own:
@@ -19,9 +19,9 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-import kaplay as K                                              # noqa: E402
-import kaplay.engine as ke                                      # noqa: E402
-from kaplay import webrun                                       # noqa: E402
+import kaypy as K                                              # noqa: E402
+import kaypy.engine as ke                                      # noqa: E402
+from kaypy import webrun                                       # noqa: E402
 
 results = []
 
@@ -55,7 +55,7 @@ def reset():
 # ------------------------------------------------------------ a good run
 reset()
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "12"
-GOOD = """from kaplay import *
+GOOD = """from kaypy import *
 kaplay(width=64, height=64)
 ticks = []
 onUpdate(lambda: ticks.append(1))
@@ -80,7 +80,7 @@ check("the program's namespace outlives the call",
 # ------------------------------------------------- an error in the setup
 reset()
 with Captured() as out:
-    status = webrun.run("from kaplay import *\nkaplay(width=64, height=64)\n"
+    status = webrun.run("from kaypy import *\nkaplay(width=64, height=64)\n"
                         "add([sprite('nope'), pos(0, 0)])\n")
 check("an error in the setup is reported as one", status == "error")
 check("and names the line in the program",
@@ -92,7 +92,7 @@ check("and ends with the exception itself",
 # ---------------------------------------------------------- a syntax error
 reset()
 with Captured() as out:
-    status = webrun.run("from kaplay import *\nkaplay(\n")
+    status = webrun.run("from kaypy import *\nkaplay(\n")
 check("a syntax error is caught before anything runs", status == "error")
 check("and is reported with a line number and the line",
       "SyntaxError on line" in out.text, out.text.strip().splitlines()[0][:60])
@@ -101,7 +101,7 @@ check("and is reported with a line number and the line",
 # The one that matters most: it happens sixty times a second, long after the
 # line that registered it returned.
 reset()
-BAD_HANDLER = """from kaplay import *
+BAD_HANDLER = """from kaypy import *
 kaplay(width=64, height=64)
 player = add([rect(4, 4), pos(0, 0)])
 
@@ -122,7 +122,7 @@ check("and it points at the handler's own line",
 
 # --------------------------------------------------------- the trimming
 # Frames belonging to asyncio, to Python and to the engine are dropped, so the
-# first thing read is the student's own code and not kaplay/engine.py.
+# first thing read is the student's own code and not kaypy/engine.py.
 check("the engine's frames are not shown when the program has its own",
       "engine.py" not in out.text and "asyncio" not in out.text,
       out.text.strip().splitlines()[:1])
