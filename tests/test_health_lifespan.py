@@ -20,7 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import kaypy.engine as ke                                       # noqa: E402
-from kaypy import (kaplay, add, rect, pos, opacity, health,      # noqa: E402
+from kaypy import (kaypy, add, rect, pos, opacity, health,      # noqa: E402
                    lifespan, sprite)
 
 results = []
@@ -60,7 +60,7 @@ def frame(eng, dt=1 / 60):
 # health()
 # =====================================================================
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 
 enemy = add([rect(10, 10), pos(0, 0), health(3), "enemy"])
@@ -103,7 +103,7 @@ check("hitting something already dead holds no second funeral",
 
 # setHP crossing zero counts as death too.
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 target = add([rect(4, 4), pos(0, 0), health(5)])
 deaths = []
@@ -121,7 +121,7 @@ check("health() with no number is refused", refused(lambda: health(None), TypeEr
 # lifespan()
 # =====================================================================
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 
 bullet = add([rect(4, 4), pos(0, 0), lifespan(0.5), "bullet"])
@@ -137,7 +137,7 @@ check("then destroys itself", not bullet.exists())
 
 # fading
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 puff = add([rect(4, 4), pos(0, 0), opacity(1), lifespan(1.0, fade=0.5)])
 
@@ -162,7 +162,7 @@ check("and at the end it is gone", not puff.exists())
 
 # fade without opacity(): a note, once, and the object still goes away
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 import io                                                       # noqa: E402
 

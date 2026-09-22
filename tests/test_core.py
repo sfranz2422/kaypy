@@ -14,7 +14,7 @@ os.environ.setdefault("KAYPY_TEST_MAX_FRAMES", "5")  # this script never calls r
 from kaypy import *  # noqa: E402
 from kaypy.engine import current_engine  # noqa: E402
 
-kaplay(width=400, height=400, background=[0, 0, 0])
+kaypy(width=400, height=400, background=[0, 0, 0])
 
 # ---- child objects follow their parent -----------------------------------
 parent = add([pos(50, 50), rect(10, 10)])

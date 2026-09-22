@@ -1,6 +1,6 @@
 from kaypy import *
 
-kaplay(width=800, height=600, background=[20, 20, 28])
+kaypy(width=800, height=600, background=[20, 20, 28])
 
 # dungeon.png is the real CC0 DungeonTileset II atlas (see CREDITS.md) —
 # one 512x512 image holding the whole tileset. loadSpriteAtlas cuts named

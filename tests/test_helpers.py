@@ -20,8 +20,8 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-# Aliased, because `from kaypy import *` binds the NAME kaplay to the
-# kaplay() function and would shadow the module itself.
+# Aliased, because `from kaypy import *` binds the NAME kaypy to the
+# kaypy() function and would shadow the module itself.
 import kaypy as _mod                                         # noqa: E402
 import kaypy.engine as ke                                    # noqa: E402
 from kaypy import *                                          # noqa: E402,F403
@@ -91,7 +91,7 @@ except ValueError as err:
 check("rgb with two numbers says what is missing", said)
 
 # --------------------------------------------------------- the game clock
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 check("time() starts at zero", time() == 0, repr(time()))
 eng._dt = 0.1
 eng._elapsed += 0.5
@@ -117,7 +117,7 @@ eng._started = True
 eng._running = False
 
 # ------------------------------------------------- the object-free onCollide
-eng2 = kaplay(width=200, height=200)
+eng2 = kaypy(width=200, height=200)
 hits = []
 
 

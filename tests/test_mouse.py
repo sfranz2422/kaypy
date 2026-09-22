@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 
 import pygame                                                   # noqa: E402
 import kaypy.engine as ke                                       # noqa: E402
-from kaypy import (kaplay, add, rect, pos, area, vec2,           # noqa: E402
+from kaypy import (kaypy, add, rect, pos, area, vec2,           # noqa: E402
                    onMouseDown, onMousePress, onMouseRelease, onMouseMove,
                    onClick, isMouseDown, isMousePressed, isMouseReleased,
                    isMouseMoved, mouseDeltaPos)
@@ -49,7 +49,7 @@ def reset():
     try:
         pygame.event.clear()
     except pygame.error:
-        pass      # before the first kaplay(), there is no event queue yet
+        pass      # before the first kaypy(), there is no event queue yet
 
 
 def post(kind, **kw):
@@ -63,7 +63,7 @@ def step(eng):
 
 # ------------------------------------------------------ press and release
 reset()
-eng = kaplay(width=200, height=200)
+eng = kaypy(width=200, height=200)
 eng._started, eng._running = True, False
 seen = []
 
@@ -97,7 +97,7 @@ check("moving fires onMouseMove", ("move", None) in seen)
 # ------------------------------------------------------------ this frame
 check("isMousePressed is true the frame it went down", True)  # set up below
 reset()
-eng = kaplay(width=200, height=200)
+eng = kaypy(width=200, height=200)
 eng._started, eng._running = True, False
 
 post(pygame.MOUSEBUTTONDOWN, button=1, pos=(1, 1))
@@ -169,7 +169,7 @@ check("a button name that does not exist says which do", said)
 # go() clears every handler, and the mouse ones must go with them, or a menu's
 # click handler keeps firing inside the game.
 reset()
-eng = kaplay(width=200, height=200)
+eng = kaypy(width=200, height=200)
 eng._started, eng._running = True, False
 onMousePress("left", lambda: None)
 onMouseMove(lambda: None)

@@ -33,7 +33,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "1"
 
 from kaypy import (  # noqa: E402
-    kaplay, add, pos, rect, area, body, anchor, setGravity,
+    kaypy, add, pos, rect, area, body, anchor, setGravity,
 )
 from kaypy.engine import current_engine  # noqa: E402
 
@@ -65,7 +65,7 @@ def run_frames(dts):
             engine.collision.step(engine._objs)
 
 
-kaplay(width=800, height=600, background=[0, 0, 0])
+kaypy(width=800, height=600, background=[0, 0, 0])
 setGravity(2400)
 
 # --- 1. the exact failure: every frame at the engine's 50ms dt ceiling ---

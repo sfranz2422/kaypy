@@ -10,7 +10,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 from kaypy import *  # noqa: E402
 
-kaplay(width=800, height=600, background=[0, 0, 0])
+kaypy(width=800, height=600, background=[0, 0, 0])
 setGravity(1600)
 
 player = add([

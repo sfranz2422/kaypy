@@ -37,7 +37,7 @@ from .storage import setData, getData
 from .callutil import register_or_decorate
 
 __all__ = [
-    "kaplay",
+    "kaypy", "kaplay",
     "loadSprite", "loadSpriteAtlas", "loadSound",
     "setGravity", "setBackground",
     "add", "get", "addLevel", "addKaboom",
@@ -65,9 +65,22 @@ __all__ = [
 ]
 
 
-def kaplay(width=800, height=600, background=(0, 0, 0)):
+def kaypy(width=800, height=600, background=(0, 0, 0)):
     """Starts the engine. It has to come first, before anything else."""
     return Engine(width=width, height=height, background=background)
+
+
+# The engine was called kaplay() before the package was renamed, and that name
+# is still on the first line of a lot of student files, in printed handouts,
+# and in every lesson written before the rename. It costs one line to keep
+# those running, so it stays. kaypy() is the documented name.
+#
+# NOTE FOR ANYONE ADDING A THIRD NAME: webbuild.py reads the window size by
+# looking through the syntax tree for a call to one of these, by name. A name
+# it does not know about does not raise anything — the export just quietly
+# falls back to 800x600. The list lives in webbuild.INIT_NAMES; add it there
+# too, and test_web_single_file.py checks that every name here is in it.
+kaplay = kaypy
 
 
 # ---- loading -------------------------------------------------------------

@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
+
+**The engine starts with `kaypy()`.** The first line of every game said
+`kaplay(...)`, directly under `from kaypy import *` — two names for one
+project, on two adjacent lines, in the file every beginner opens first.
+
+- `kaypy(width=, height=, background=)` is the documented name.
+- `kaplay(...)` is an alias and keeps working. Nothing written before this
+  needs changing: same function, same arguments, same behaviour.
+- Both exporters read the window size off that call by name, so both were
+  taught the new one. A game built with `kaypy web`, or downloaded from
+  PyIDE, opens at the size it asks for either way — that failure mode was
+  silent (it fell back to 800×600 and reported success), so it is now
+  covered by a test in each project that compares the two lists of names
+  rather than trusting them to be kept in step.
+
+## 0.6.0
 
 **The mouse does more than click.** `onClick` answered "somebody clicked" and
 nothing else — not which button, not whether one is being held, not that the

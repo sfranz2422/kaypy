@@ -34,7 +34,7 @@ For how to *use* the engine, see [README.md](README.md).
 ### How the loop starts
 
 There is no `run()` call anywhere in the KAPLAY guide, so there is none here
-either. Natively, `kaplay()` registers the frame loop with `atexit`, so it
+either. Natively, `kaypy()` registers the frame loop with `atexit`, so it
 starts the instant your script's top level finishes. `run()` is still exposed
 for tooling that wants to be explicit, and is a harmless no-op the second time.
 
@@ -55,7 +55,7 @@ Standalone scripts, run directly, using plain `assert`. They set
 python tests/test_core.py               # collision edge-triggering, child objects, scenes, state()
 python tests/test_physics.py            # gravity, grounding, mass-based pushing
 python tests/test_tile_floor_landing.py # landing on a tiled floor, at uneven frame rates
-python tests/test_web_platform_guard.py # kaplay() never touches atexit in a browser
+python tests/test_web_platform_guard.py # kaypy() never touches atexit in a browser
 python tests/test_webrun.py             # running a game in a page, and trimming its tracebacks
 python tests/test_web_single_file.py    # `kaypy web` builds one file, and the game inside it runs
 python tests/test_lazy_key_map.py       # pygame.K_* is never read before pygame.init()
@@ -206,7 +206,7 @@ Fixed by detecting `sys.platform == "emscripten"` (the real marker pygbag and
 CPython both use) and skipping atexit registration there entirely. The web
 build's generated `main.py` calls `run_async()` explicitly instead. Pinned by
 `tests/test_web_platform_guard.py`, which recreates pygbag's actual broken
-module and confirms `kaplay()` never touches it once that platform is detected.
+module and confirms `kaypy()` never touches it once that platform is detected.
 
 ### 2. pygame was a stub, because nothing declared it
 
@@ -242,12 +242,12 @@ Native pygame-ce doesn't care — those constants exist the moment you
 `import pygame`, before `pygame.init()`. Under pygbag's WASM pygame they don't
 exist until after `init()`, and `import kaypy` reaches `events.py` (via
 `engine.py`'s `from .events import EventManager`) well before a script's own
-`kaplay()` call runs `pygame.init()`. Every web export died with
+`kaypy()` call runs `pygame.init()`. Every web export died with
 `AttributeError: module 'pygame' has no attribute 'K_LEFT'` before a single
 line of the game ran.
 
 The table is now built lazily on first use — `onKeyDown`/`onKeyPress`/
-`onKeyRelease` or the frame loop, all of which only happen after `kaplay()`.
+`onKeyRelease` or the frame loop, all of which only happen after `kaypy()`.
 Pinned by `tests/test_lazy_key_map.py`.
 
 ### 4. localhost is not 127.0.0.1

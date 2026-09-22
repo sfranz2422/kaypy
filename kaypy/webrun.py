@@ -138,7 +138,7 @@ async def drive():
 
     game = _engine._engine
     if game is None:
-        print("No game started. A kaypy program needs kaplay() before anything "
+        print("No game started. A kaypy program needs kaypy() before anything "
               "else — see the guide, or `kaypy new` for a starter.",
               file=sys.stderr)
         return "error"

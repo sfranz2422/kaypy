@@ -223,8 +223,19 @@ def build_page(game_script: Path, extra_assets: list[Path], title: str | None,
     return re.sub("|".join(slots), lambda m: slots[m.group(0)], page), used
 
 
+# Every name that starts the engine. kaypy() is the documented one; kaplay()
+# is the pre-rename name, kept working for files written before it.
+#
+# This has to list them ALL. A name missing here does not fail loudly — the
+# call simply is not recognised, and the export falls back to 800x600 while
+# reporting success. test_web_single_file.py asserts this matches what the
+# package actually exports, so adding an alias without adding it here fails a
+# test instead of shipping a quietly wrong canvas.
+INIT_NAMES = frozenset({"kaypy", "kaplay"})
+
+
 def read_size(game_script: Path) -> tuple[int, int]:
-    """The width and height the script asks kaplay() for.
+    """The width and height the script asks kaypy() for.
 
     Only so the canvas starts at the right size instead of resizing visibly on
     the first frame. Read off the syntax tree, never run; anything it cannot
@@ -238,7 +249,7 @@ def read_size(game_script: Path) -> tuple[int, int]:
         return width, height
     for node in ast.walk(tree):
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                and node.func.id == "kaplay"):
+                and node.func.id in INIT_NAMES):
             for kw in node.keywords:
                 if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, int):
                     if kw.arg == "width":

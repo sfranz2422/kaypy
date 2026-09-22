@@ -1,6 +1,6 @@
 from kaypy import *
 
-kaplay(width=800, height=600, background=[0, 0, 0])
+kaypy(width=800, height=600, background=[0, 0, 0])
 
 loadSound("bell", "sounds/ding.wav")
 loadSound("bgMusic", "sounds/background.wav")

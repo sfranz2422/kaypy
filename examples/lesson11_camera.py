@@ -1,6 +1,6 @@
 from kaypy import *
 
-kaplay(width=800, height=600, background=[141, 183, 255])
+kaypy(width=800, height=600, background=[141, 183, 255])
 
 loadSprite("bean", "images/bean.png")
 loadSprite("grass", "images/grass.png")

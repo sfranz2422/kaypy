@@ -68,7 +68,7 @@ def done(code=None):
 # that "it ran" means several different things went right rather than one.
 GAME = '''from kaypy import *
 
-kaplay(width=320, height=240, background=[24, 24, 40])
+kaypy(width=320, height=240, background=[24, 24, 40])
 loadSprite("bean", "images/bean.png")
 loadSound("ding", "sounds/ding.wav")
 
@@ -146,7 +146,36 @@ check("it is a whole HTML document",
       page.startswith("<!doctype html>") and page.rstrip().endswith("</html>"))
 check("the title carries through", "<title>Test Game</title>" in page)
 check("the canvas starts at the size the script asks for",
-      'width="320" height="240"' in page, "read off kaplay(width=, height=)")
+      'width="320" height="240"' in page, "read off kaypy(width=, height=)")
+
+# ----------------------------------- every init name is one the builder knows
+#
+# read_size() finds the window size by looking for a call to an init function
+# BY NAME. Add an alias to the package and forget to tell the builder about it
+# and nothing breaks loudly: the call is simply not recognised, the size falls
+# back to 800x600, and the build reports success. The game then opens at the
+# wrong size on someone else's machine, which is the last place anyone is
+# watching. So the two lists are compared directly.
+import kaypy as _pkg                                            # noqa: E402
+
+exported_inits = {name for name in _pkg.__all__
+                  if getattr(_pkg, name, None) is _pkg.kaypy}
+unknown = exported_inits - webbuild.INIT_NAMES
+check("the builder recognises every name that starts the engine",
+      not unknown,
+      "webbuild.INIT_NAMES is missing: " + ", ".join(sorted(unknown))
+      if unknown else " ".join(sorted(exported_inits)))
+
+# And that it actually reads a size through each of them, rather than merely
+# listing them. A name in the set that the parser still misses would pass the
+# check above and fail here.
+for _name in sorted(exported_inits):
+    probe = work / ("probe_%s.py" % _name)
+    probe.write_text("from kaypy import *\n%s(width=321, height=241)\n" % _name)
+    check("  %s(width=, height=) is read off the syntax tree" % _name,
+          webbuild.read_size(probe) == (321, 241),
+          "got %sx%s" % webbuild.read_size(probe))
+    probe.unlink()
 check("it carries exactly the assets the script names",
       sorted(used) == ["images/bean.png", "sounds/ding.wav"], " ".join(sorted(used)))
 

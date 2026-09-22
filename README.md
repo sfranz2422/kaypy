@@ -54,7 +54,7 @@ written for Python.
 ```python
 from kaypy import *
 
-kaplay(width=800, height=600, background=[141, 183, 255])
+kaypy(width=800, height=600, background=[141, 183, 255])
 
 loadSprite("bean", "images/bean.png")
 
@@ -67,7 +67,7 @@ add([
 
 That's a complete, running game. Save it, run `python game.py`, and a window
 opens. **There is no `run()` call** — exactly like the browser version, the
-loop is already going the moment `kaplay()` executes.
+loop is already going the moment `kaypy()` executes.
 
 ---
 
@@ -411,7 +411,7 @@ with `python game.py` is the one that becomes the web page.
 
 | Call | What it does |
 |------|--------------|
-| `kaplay(width, height, background)` | Starts the engine. Must come first. |
+| `kaypy(width, height, background)` | Starts the engine. Must come first. |
 | `setGravity(n)` | Pixels per second squared. `0` (the default) means no gravity. |
 | `setBackground(r, g, b)` | Change the background colour later. |
 
@@ -520,7 +520,7 @@ def build_game(): ...
 | `vec2(x, y)` | A vector. Supports `+`, `-`, `*`, `.len()`, `.unit()`, `.dist()`. |
 | `Vec2.fromAngle(degrees)` | A unit vector pointing that way — which direction a rotated object faces. |
 | `rand(a, b)`, `randi(a, b)`, `choose(seq)`, `chance(p)` | Randomness. |
-| `time()` | Seconds since `kaplay()` — the game's clock, so it pauses when the game does. |
+| `time()` | Seconds since `kaypy()` — the game's clock, so it pauses when the game does. |
 | `lerp(a, b, t)`, `clamp(v, lo, hi)`, `wave(lo, hi, t)` | Blend, bound, swing. |
 | `rgb(r, g, b)` | A colour. Takes `rgb(255, 128, 0)`, `rgb("#ff8800")` or `rgb(200)` for a grey. |
 | `destroy(obj)`, `destroyAll(tag)` | Remove one, or every object with a tag. |
@@ -553,7 +553,7 @@ package, so clone the repo if you want to run them as they're written:
 
 | # | Lesson | Shows |
 |---|--------|-------|
-| 1 | `lesson1_adding_object.py` | `kaplay()`, `loadSprite`, `add` |
+| 1 | `lesson1_adding_object.py` | `kaypy()`, `loadSprite`, `add` |
 | 2 | `lesson2_player_movement.py` | `onKeyDown`, `.move()` |
 | 3 | `lesson3_collision.py` | `area()` vs `body()`, `onCollide` |
 | 5 | `lesson5_gravity.py` | `setGravity`, `isStatic`, jumping |

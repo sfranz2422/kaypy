@@ -40,7 +40,7 @@ BLOCK_RE = re.compile(r"```python\n(.*?)```", re.DOTALL)
 PREAMBLE = """
 from kaypy import *
 
-kaplay(width=320, height=240)
+kaypy(width=320, height=240)
 
 loadSprite("bean", "images/bean.png")
 loadSprite("ship", "images/bean.png")

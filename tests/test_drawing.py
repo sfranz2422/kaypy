@@ -27,7 +27,7 @@ sys.path.insert(0, str(ROOT))
 
 import pygame                                                   # noqa: E402
 import kaypy.engine as ke                                       # noqa: E402
-from kaypy import (kaplay, onDraw, drawRect, drawCircle, drawLine,  # noqa: E402
+from kaypy import (kaypy, onDraw, drawRect, drawCircle, drawLine,  # noqa: E402
                    drawLines, drawText, vec2, rgb, setCamPos)
 
 results = []
@@ -74,7 +74,7 @@ check("and the message shows what to write", "@onDraw" in said)
 
 # ------------------------------------------------------- it actually draws
 reset()
-eng = kaplay(width=200, height=200, background=BG)
+eng = kaypy(width=200, height=200, background=BG)
 eng._started, eng._running = True, False
 
 
@@ -100,7 +100,7 @@ check("a line draws", at(screen, 100, 190) == RED,
 
 # ------------------------------------------------------------- anchoring
 reset()
-eng = kaplay(width=200, height=200, background=BG)
+eng = kaypy(width=200, height=200, background=BG)
 eng._started, eng._running = True, False
 
 
@@ -117,7 +117,7 @@ check("anchor='center' centres it on pos", at(screen, 100, 100) == RED
 
 try:
     reset()
-    eng = kaplay(width=100, height=100)
+    eng = kaypy(width=100, height=100)
     eng._started, eng._running = True, False
     onDraw(lambda: drawRect(pos=vec2(0, 0), width=5, height=5, anchor="nope"))
     render(eng)
@@ -129,7 +129,7 @@ check("an anchor name that does not exist is rejected", said,
 
 # ------------------------------------------------- the camera, and fixed
 reset()
-eng = kaplay(width=200, height=200, background=BG)
+eng = kaypy(width=200, height=200, background=BG)
 eng._started, eng._running = True, False
 
 
@@ -154,7 +154,7 @@ check("and world space follows it", at(screen, 50, 100) == BLUE,
 
 # ------------------------------------------------------------ text, lines
 reset()
-eng = kaplay(width=200, height=200, background=BG)
+eng = kaypy(width=200, height=200, background=BG)
 eng._started, eng._running = True, False
 
 
@@ -175,7 +175,7 @@ check("drawLines draws each segment",
 
 # --------------------------------------------------- order and clearing
 reset()
-eng = kaplay(width=100, height=100, background=BG)
+eng = kaypy(width=100, height=100, background=BG)
 eng._started, eng._running = True, False
 order = []
 onDraw(lambda: order.append("first"))
@@ -192,7 +192,7 @@ check("and a scene change clears them", order == [],
 
 # An onDraw that raises must not be swallowed — it is the student's bug.
 reset()
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 eng._started, eng._running = True, False
 onDraw(lambda: drawRect(pos=vec2(0, 0), width=10, height=10, color="not a colour"))
 try:

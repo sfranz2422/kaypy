@@ -13,7 +13,7 @@ _DIGITS = "0123456789"
 # moment you `import pygame` and before pygame.init() ever runs. A WASM build
 # of pygame need not be: one of them (pygbag 0.9.3's) did not populate them
 # until after init(). `import kaypy` reaches this module — via engine.py's
-# `from .events import EventManager` — long before a script's own kaplay()
+# `from .events import EventManager` — long before a script's own kaypy()
 # call gets as far as pygame.init(), so building the map eagerly here crashed
 # every web export with `AttributeError: module 'pygame' has no attribute
 # 'K_LEFT'` before a single line of the game script ran.
@@ -23,8 +23,8 @@ _DIGITS = "0123456789"
 # makes the module's import order its own business rather than a property of
 # whichever WASM pygame is underneath, and tests/test_lazy_key_map.py holds
 # it. resolve_key()/key_name() are only ever called from
-# on_key_down/on_key_press/on_key_release (registered after kaplay() runs) or
-# from the frame loop (which only starts after kaplay() runs), so building on
+# on_key_down/on_key_press/on_key_release (registered after kaypy() runs) or
+# from the frame loop (which only starts after kaypy() runs), so building on
 # first call is always safe.
 _KEY_MAP = None
 _REVERSE_KEY_MAP = None

@@ -56,7 +56,7 @@ def reset():
 reset()
 os.environ["KAYPY_TEST_MAX_FRAMES"] = "12"
 GOOD = """from kaypy import *
-kaplay(width=64, height=64)
+kaypy(width=64, height=64)
 ticks = []
 onUpdate(lambda: ticks.append(1))
 """
@@ -102,7 +102,7 @@ check("and is reported with a line number and the line",
 # line that registered it returned.
 reset()
 BAD_HANDLER = """from kaypy import *
-kaplay(width=64, height=64)
+kaypy(width=64, height=64)
 player = add([rect(4, 4), pos(0, 0)])
 
 
@@ -174,8 +174,8 @@ check("and says it looks like a kaypy bug", "bug in kaypy" in text,
 reset()
 with Captured() as out:
     status = asyncio.run(webrun.drive())
-check("a program that never called kaplay() says so", status == "error")
-check("and says what to do about it", "kaplay()" in out.text,
+check("a program that never called kaypy() says so", status == "error")
+check("and says what to do about it", "kaypy()" in out.text,
       out.text.strip()[:60])
 
 reset()

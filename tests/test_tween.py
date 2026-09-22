@@ -22,7 +22,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from kaypy import kaplay, vec2, easings                      # noqa: E402
+from kaypy import kaypy, vec2, easings                      # noqa: E402
 from kaypy.easings import ALL                                # noqa: E402
 import kaypy.engine as ke                                    # noqa: E402
 
@@ -34,7 +34,7 @@ def check(label, ok, detail=""):
     print("  %-4s %-50s %s" % ("ok" if ok else "FAIL", label, detail))
 
 
-eng = kaplay(width=100, height=100)
+eng = kaypy(width=100, height=100)
 timers = eng.timers
 
 

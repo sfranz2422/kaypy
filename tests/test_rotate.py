@@ -128,11 +128,11 @@ for angle in (0, 73, 200):
           "drifted (%d, %d)" % off)
 
 # ---------------------------------------------------------- the component
-from kaypy import (kaplay, add, rect, circle, pos, area, rotate,  # noqa: E402
+from kaypy import (kaypy, add, rect, circle, pos, area, rotate,  # noqa: E402
                     anchor, vec2)
 import kaypy.engine as ke                                       # noqa: E402
 
-eng = kaplay(width=200, height=200)
+eng = kaypy(width=200, height=200)
 spinner = add([rect(40, 20), pos(100, 100), anchor("center"), area(), rotate(0)])
 
 check("the object has .angle", spinner.angle == 0)

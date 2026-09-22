@@ -16,7 +16,7 @@ import random as _random
 
 
 def time():
-    """Seconds since kaplay() started. Kaplay's clock, not the wall clock.
+    """Seconds since kaypy() started. Kaplay's clock, not the wall clock.
 
     Pauses when the game does, which is the whole point of not using
     `time.time()` — a sine wave driven by wall time jumps when a game is

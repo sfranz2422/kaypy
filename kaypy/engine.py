@@ -1,12 +1,12 @@
-"""The engine singleton. kaplay(...) creates it and starts the game the
+"""The engine singleton. kaypy(...) creates it and starts the game the
 moment the rest of the script finishes running — there is no run() call
 anywhere in the Kaplay guide.
 
-On native CPython, atexit gets us this for free: kaplay() registers the
+On native CPython, atexit gets us this for free: kaypy() registers the
 frame loop and it fires once your script's top level finishes.
 
 In a browser (sys.platform == "emscripten") that trick is no use, and
-kaplay() skips atexit entirely there. Two reasons, either one sufficient.
+kaypy() skips atexit entirely there. Two reasons, either one sufficient.
 
 The plain one: a browser tab's Python interpreter does not exit, so an
 atexit handler is a frame loop that never starts.
@@ -44,7 +44,7 @@ _engine: "Engine | None" = None
 
 def current_engine() -> "Engine":
     if _engine is None:
-        raise RuntimeError("kaplay(...) must run before anything else in a Kaplay script")
+        raise RuntimeError("kaypy(...) must run before anything else in a Kaplay script")
     return _engine
 
 

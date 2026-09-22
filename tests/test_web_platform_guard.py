@@ -1,11 +1,11 @@
-"""kaplay() must not touch atexit in a browser.
+"""kaypy() must not touch atexit in a browser.
 
     python3 tests/test_web_platform_guard.py
 
 The rule outlives the reason it was written for. On the web, something else
 calls run_async() explicitly — kaypy/webrun.py — and an atexit handler in a
 tab whose interpreter never exits is a frame loop that never starts. So
-kaplay() checks the platform and skips atexit there, and this proves the check
+kaypy() checks the platform and skips atexit there, and this proves the check
 is really in the code path rather than in a comment about it.
 
 It proves it the harshest way available: under an atexit module where merely
@@ -26,18 +26,18 @@ atexit.register(...) under it raises NameError immediately.
 
 Import order matters here: in a real pygbag run, that swap (and all of
 pygbag's own startup, which uses asyncio/logging plenty) has already
-happened by the time YOUR game script's kaplay() call runs — so the
+happened by the time YOUR game script's kaypy() call runs — so the
 question that actually matters is narrower than "does anything, ever,
 call atexit.register after the swap" (stdlib's own `logging` module does
 that on its own first import, before kaypy is even involved, and that's
 pygbag's problem to have solved for its own runtime to work at all —
 plenty of other pygbag games ship fine, so it evidently has). The
 question that's actually kaypy's to answer is: once everything is
-already imported and the swap has already happened, does kaplay() itself
+already imported and the swap has already happened, does kaypy() itself
 ever touch atexit? This imports kaplay normally FIRST (so stdlib's own
 atexit usage happens against the real atexit, matching real execution
 order), then swaps in pygbag's broken module and sets
-sys.platform = "emscripten" before calling kaplay(), the way a real
+sys.platform = "emscripten" before calling kaypy(), the way a real
 pygbag boot precedes your game script.
 """
 import os
@@ -50,8 +50,8 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 # Import kaplay (and therefore asyncio, logging, etc.) FIRST, against the
 # real atexit — matching real pygbag execution order, where all of that
-# bootstrapping is long done before your game script's kaplay() call runs.
-from kaypy import kaplay, add, pos, rect  # noqa: E402
+# bootstrapping is long done before your game script's kaypy() call runs.
+from kaypy import kaypy, add, pos, rect  # noqa: E402
 from kaypy.engine import current_engine  # noqa: E402
 
 # --- NOW recreate pygbag's actual buggy atexit shim verbatim ---------------
@@ -80,14 +80,14 @@ real_platform = sys.platform
 sys.platform = "emscripten"
 
 try:
-    kaplay(width=200, height=200, background=[0, 0, 0])
+    kaypy(width=200, height=200, background=[0, 0, 0])
     assert current_engine().is_web is True, "Engine should detect the emscripten platform"
     add([pos(0, 0), rect(10, 10)])
     assert _register.calls == 0, (
-        f"kaplay() called atexit.register() {_register.calls} time(s) under "
+        f"kaypy() called atexit.register() {_register.calls} time(s) under "
         f"sys.platform=='emscripten' — that would crash for real under pygbag"
     )
-    print("confirmed: kaplay() never calls atexit.register() once sys.platform is 'emscripten'")
+    print("confirmed: kaypy() never calls atexit.register() once sys.platform is 'emscripten'")
 finally:
     sys.platform = real_platform
 

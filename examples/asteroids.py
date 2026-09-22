@@ -15,7 +15,7 @@ things here appear nowhere in the lessons and are the whole point of it:
 """
 from kaypy import *
 
-kaplay(width=800, height=600, background=[8, 8, 20])
+kaypy(width=800, height=600, background=[8, 8, 20])
 
 TURN = 200          # degrees per second
 THRUST = 320        # pixels per second per second
