@@ -1,5 +1,50 @@
 # Changelog
 
+## 0.11.0
+
+**New: `follow()`.** Keep one object where another one is.
+
+```python
+add([rect(40, 6), pos(0, 0), color(220, 60, 60),
+     follow(enemy, offset=vec2(0, -14))])      # welded on
+
+add([sprite("ghosty"), pos(0, 0), follow(player, speed=180)])   # chases
+```
+
+Without `speed` it locks on exactly, every frame, which is what a health bar
+or a name label wants. With `speed` it moves toward the target at that many
+pixels per second instead, which is what a pet or a hunting enemy wants. The
+lock is KAPLAY's `follow(obj, offset)`; `speed` is an extra keyword, so
+KAPLAY-shaped code still means what it says.
+
+When the target is destroyed the follower stops where it stands and goes on
+existing. It does not vanish and it does not jump back to the origin — both
+of which are mystifying to watch. A health bar that should die with its enemy
+is destroyed where the enemy is.
+
+**Components can now ask to run after physics**, via `wants_late` on `Comp`.
+`follow()` is the only thing that does, and it has to. A component's
+`update()` runs *before* the physics step, which is right for everything that
+decides what an object should try to do — and wrong for a follower, whose
+whole job is to agree with where another object *ended up*. Reading the
+target before physics reads last frame's position: invisible standing still,
+and thirteen pixels on a player mid-jump at 800 px/s. A health bar that fits
+while you walk and slides off the moment you jump looks like a drawing fault
+and is not one.
+
+The engine checks the flag rather than calling the method, so a game with no
+follower in it makes no extra calls at all. Measured on a 200-object scene,
+the whole pass is 4 ms against 730 ms of frame time.
+
+`tests/test_follow.py` measures the gap between follower and target on the
+frames where the target is moving fastest — falling, jumping, and being
+pushed out of a floor by collision — because those are the only frames where
+running early would show. Against a version of `follow()` written the obvious
+way, those three checks fail at 13.33 px and the other fifteen still pass,
+which is exactly why it is worth measuring.
+
+`examples/pet_and_healthbar.py` is both halves in one game.
+
 ## 0.10.2
 
 **Fixed: a character standing still on the floor twitched one pixel, several

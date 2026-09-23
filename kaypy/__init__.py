@@ -29,6 +29,7 @@ from .comps.state import state
 from .comps.move import move, offscreen, tile
 from .comps.health import health
 from .comps.lifespan import lifespan
+from .comps.follow import follow
 
 # ---- drawing straight to the screen, and remembering things -------------
 from .drawing import (drawRect, drawCircle, drawLine, drawLines, drawText,
@@ -44,7 +45,7 @@ __all__ = [
     "add", "get", "addLevel", "addKaboom",
     "pos", "sprite", "rect", "circle", "text", "area", "body",
     "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
-    "move", "offscreen", "tile", "state", "health", "lifespan",
+    "move", "offscreen", "tile", "state", "health", "lifespan", "follow",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
     "onMouseDown", "onMousePress", "onMouseRelease", "onMouseMove",
     "isMouseDown", "isMousePressed", "isMouseReleased", "isMouseMoved",

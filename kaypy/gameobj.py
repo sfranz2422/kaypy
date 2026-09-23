@@ -23,11 +23,28 @@ class Comp:
     """
     id: str = ""
 
+    #: Does this component need to run AFTER physics and collision, rather
+    #: than before with everything else?
+    #:
+    #: Almost nothing does. The one thing that does is a component whose
+    #: whole job is to agree with another object's final position — follow()
+    #: — because update() runs before physics moves anything, so a follower
+    #: reading a position there reads last frame's. On a health bar over a
+    #: jumping player that is a visible lag of a dozen pixels, appearing only
+    #: when the player is in the air, which is a miserable thing to debug.
+    #:
+    #: The engine only makes the extra pass for components that ask, so a
+    #: game with no followers in it pays nothing.
+    wants_late: bool = False
+
     def add(self, obj: "GameObj"):
         """Called once, when the component is attached to obj."""
 
     def update(self, obj: "GameObj"):
         """Called every frame, if the engine has one running."""
+
+    def late_update(self, obj: "GameObj"):
+        """Called every frame after physics, if wants_late is set."""
 
     def draw(self, obj: "GameObj", ctx):
         """Called every frame during rendering."""

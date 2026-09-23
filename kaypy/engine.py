@@ -411,6 +411,23 @@ class Engine:
                     self.physics.step(self._objs, sub_dt)
                     self.collision.step(self._objs)
 
+                # A second pass, for the few components whose job is to agree
+                # with where something else ENDED UP — follow(), and nothing
+                # else so far. Run in the ordinary update above, a follower
+                # reads the target's position from before physics moved it,
+                # and trails a frame behind whenever the target is doing
+                # anything interesting.
+                #
+                # The flag is checked rather than the method called, so a game
+                # without a follower in it pays an attribute lookup and no
+                # call at all.
+                for obj in list(self._objs):
+                    if not obj.exists():
+                        continue
+                    for comp in list(obj._comps.values()):
+                        if comp.wants_late:
+                            comp.late_update(obj)
+
             self.screen.fill(self._background)
             self.render.draw(self._objs, self.screen, self.camera, debug.inspect,
                              self.events.draw_handlers)
