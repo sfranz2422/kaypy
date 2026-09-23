@@ -1,8 +1,23 @@
-# kaypy
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sfranz2422/kaypy/main/docs/kaypy.png"
+       alt="" width="200">
+</p>
 
-[![PyPI](https://img.shields.io/pypi/v/kaypy.svg)](https://pypi.org/project/kaypy/)
-[![Python versions](https://img.shields.io/pypi/pyversions/kaypy.svg)](https://pypi.org/project/kaypy/)
-[![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](https://github.com/sfranz2422/kaypy/blob/main/LICENSE)
+<h1 align="center">KayPy</h1>
+
+<p align="center">
+  <a href="https://kaypy.app"><b>kaypy.app</b></a> &nbsp;·&nbsp;
+  <a href="https://kaypy.app/play/">Try it in your browser</a> &nbsp;·&nbsp;
+  <a href="https://kaypy.app/guide/">Guide</a> &nbsp;·&nbsp;
+  <a href="https://kaypy.app/api/">API</a> &nbsp;·&nbsp;
+  <a href="https://discord.gg/sVXnsDZNm">Discord</a>
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/kaypy/"><img src="https://img.shields.io/pypi/v/kaypy.svg" alt="PyPI"></a>
+  <a href="https://pypi.org/project/kaypy/"><img src="https://img.shields.io/pypi/pyversions/kaypy.svg" alt="Python versions"></a>
+  <a href="https://github.com/sfranz2422/kaypy/blob/main/LICENSE"><img src="https://img.shields.io/badge/licence-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
 **A real-Python game engine with [KAPLAY](https://kaplayjs.com)'s API — runs on your
 machine, exports to the browser.**
@@ -47,9 +62,17 @@ which builds it into **one HTML file**. Double-click that file and the game
 plays — no server, nothing installed, nothing unzipped. Upload the same single
 file to itch.io, email it, or drop it on a school share.
 
-**New here?** [`GUIDE.md`](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md) is a thirteen-lesson course that starts from
-nothing and ends with a state-machine enemy AI — the Learn Kaplay lessons,
-written for Python.
+**New here?** The [guide](https://kaypy.app/guide/) is a thirteen-lesson course
+that starts from nothing and ends with a state-machine enemy AI — the Learn
+Kaplay lessons, written for Python. It is also in this repository as
+[`GUIDE.md`](https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md).
+
+**Nothing to install:** the [playground](https://kaypy.app/play/) runs kaypy in
+the browser, with the sprites already there. Write a game in a tab and download
+it as a single HTML file.
+
+**Stuck, or teaching with this?** There is a
+[Discord](https://discord.gg/sVXnsDZNm).
 
 ```python
 from kaypy import *
@@ -602,6 +625,11 @@ it when the animation should actually change.
 doesn't have `body()`.
 
 Press **F1** while a game is running to draw every collision box.
+
+**Still stuck?** Ask on the [Discord](https://discord.gg/sVXnsDZNm), or open an
+[issue](https://github.com/sfranz2422/kaypy/issues). If you are teaching with
+this and something is in your way, that is worth saying out loud — most of what
+is in here came from a classroom.
 
 ---
 

@@ -46,9 +46,11 @@ dependencies = [
 # install and a student with no ffmpeg is not a student who cannot publish.
 
 [project.urls]
-Homepage = "https://github.com/sfranz2422/kaypy"
+Homepage = "https://kaypy.app"
 Repository = "https://github.com/sfranz2422/kaypy"
-Documentation = "https://github.com/sfranz2422/kaypy/blob/main/GUIDE.md"
+Documentation = "https://kaypy.app/guide/"
+Playground = "https://kaypy.app/play/"
+Discord = "https://discord.gg/sVXnsDZNm"
 
 [project.scripts]
 kaypy = "kaypy.cli:main"

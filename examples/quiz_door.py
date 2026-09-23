@@ -1,3 +1,23 @@
+"""A door that asks a question — what ask(), say() and pause() are for.
+
+    python3 quiz_door.py
+
+Arrows to move, space to jump, escape to pause. Walk into the door and the
+game stops and asks you something; get it right and the door opens.
+
+Not one of the thirteen lessons: it is the smallest complete example of the
+one thing a teacher asks for that a game engine usually cannot do. Three
+names here appear nowhere in the lessons:
+
+    ask(question, choices, answer=n)   stop and ask, then run a callback
+    say(text)                          stop and show a line of text
+    pause() / resume() / isPaused()    freeze the game where it stands
+
+The question is a callback rather than a return value because a browser
+cannot block: nothing can wait for an answer without stopping the frame that
+would draw the question. So `ask` puts the panel up and hands you the answer
+when there is one, and the game is paused in between.
+"""
 from kaypy import *
 
 kaypy(width=800, height=600, background=[141, 183, 255])
