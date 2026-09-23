@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.10.0
+
+**A d-pad on the screen, for playing with a thumb.**
+
+```python
+kaypy(width=800, height=600, joystick=True)
+```
+
+That is the whole change to a game. The overlay pretends to be the keyboard:
+the pad holds the arrow keys and the two buttons send `space` and `z`, so
+every game already written — every lesson in the guide, the starter, whatever
+a class wrote last week — is playable on a phone without a line of it
+changing. Pass a list to choose what the buttons send:
+`joystick=["space", "x"]`.
+
+- Every way a game can ask about a key agrees: `onKeyDown`, `isKeyDown`,
+  `onKeyPress` and `onKeyRelease` all see a thumb exactly as they see a
+  finger on the keyboard.
+- **Fingers are tracked one by one.** A platformer needs run and jump at the
+  same time, and with a single pointer, pressing jump releases right — so
+  the games this exists for would have been the ones it broke.
+- Diagonals hold two directions at once, and the middle of the pad holds
+  nothing, so a resting thumb is not "left".
+- The mouse counts as a finger, so it can be tried on a laptop. A control
+  scheme that can only be tested by picking up a phone is one that goes
+  untested.
+- A panel lets go of everything, or the player answers a question and comes
+  back to a character that has been walking into a wall.
+
+It is drawn on the canvas rather than built out of HTML — unlike a panel,
+there is nothing to select, read aloud or zoom, and drawing it means the same
+code works in a browser and in a window on a desktop.
+
 ## 0.9.0
 
 **Pause a game, and ask the player something.**

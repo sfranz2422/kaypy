@@ -95,6 +95,11 @@ class EventManager:
         self.click_handlers = []
         self.update_handlers = []  # (tag_or_None, fn)
 
+        # Key codes an on-screen joystick is holding. Consulted everywhere
+        # the real keyboard is, so a thumb on the d-pad is indistinguishable
+        # from a finger on the arrow key — which is the whole point of it.
+        self.virtual_keys = set()
+
         self.mouse_down_handlers = []      # (button, fn)
         self.mouse_press_handlers = []     # (button, fn)
         self.mouse_release_handlers = []   # (button, fn)
@@ -243,7 +248,7 @@ class EventManager:
 
         pressed = pygame.key.get_pressed()
         for code, fn in self.key_down_handlers:
-            if pressed[code]:
+            if pressed[code] or code in self.virtual_keys:
                 call_flexible(fn, key_name(code))
 
         if self.mouse_down_handlers:

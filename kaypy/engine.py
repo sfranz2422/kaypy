@@ -85,7 +85,8 @@ class SoundHandle:
 
 
 class Engine:
-    def __init__(self, width=800, height=600, background=(0, 0, 0)):
+    def __init__(self, width=800, height=600, background=(0, 0, 0),
+                 joystick=False):
         global _engine
         _engine = self
 
@@ -129,6 +130,15 @@ class Engine:
         self._started = False
         self._paused = False
         self._font_cache = {}
+
+        # An on-screen d-pad, for playing with a thumb. It holds keys down on
+        # the game's behalf, so nothing else in the engine has to know it
+        # exists — see kaypy/joystick.py.
+        self.joystick = None
+        if joystick:
+            from .joystick import Joystick
+            buttons = None if joystick is True else joystick
+            self.joystick = Joystick(width, height, buttons)
         self.is_web = sys.platform == "emscripten"
 
         if not self.is_web:
@@ -195,6 +205,20 @@ class Engine:
 
     def shake(self, n=8):
         self.camera.shake(n)
+
+    def _virtual_key(self, code, down):
+        """The joystick pressed or released a key.
+
+        A real pygame event is posted so that onKeyPress and onKeyRelease —
+        which read the event queue rather than asking what is held — fire
+        exactly as they would for the keyboard.
+        """
+        try:
+            kind = pygame.KEYDOWN if down else pygame.KEYUP
+            pygame.event.post(pygame.event.Event(kind, key=code, mod=0,
+                                                 unicode=""))
+        except pygame.error:
+            pass
 
     def _get_font(self, size):
         f = self._font_cache.get(size)
@@ -351,7 +375,18 @@ class Engine:
             # fires and moves the player exactly nowhere.
             from . import panel as _panel
             if not _panel.handle_events(pg_events):
+                # The joystick gets the events first, and holds keys down
+                # before the handlers that read them run this frame. It does
+                # not consume them: a game may well want the raw clicks too.
+                if self.joystick is not None:
+                    self.joystick.handle(pg_events, self._virtual_key)
+                    self.events.virtual_keys = self.joystick.held
                 self.events.process_pygame_events(pg_events, self._objs)
+            elif self.joystick is not None:
+                # A panel is up. Let go of anything the thumb was holding, or
+                # the player comes back to a character still walking left.
+                self.joystick.release_all(self._virtual_key)
+                self.events.virtual_keys = self.joystick.held
 
             if not self._paused:
                 self.events.run_update_handlers(self._objs)
@@ -379,6 +414,10 @@ class Engine:
             self.screen.fill(self._background)
             self.render.draw(self._objs, self.screen, self.camera, debug.inspect,
                              self.events.draw_handlers)
+            # Over the game and the HUD, under a panel: a question is more
+            # important than the controls for the game it is interrupting.
+            if self.joystick is not None:
+                self.joystick.draw(self.screen, self)
             # Last, so it is over everything — including anything the game
             # drew in onDraw, which is where a HUD lives.
             _panel.draw(self.screen, self)

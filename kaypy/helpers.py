@@ -49,11 +49,24 @@ def isKeyDown(key):
     rather than a second handler that sets a flag.
     """
     import pygame
+    from .engine import current_engine
     from .events import resolve_key
 
     try:
-        return bool(pygame.key.get_pressed()[resolve_key(key)])
-    except (KeyError, IndexError, pygame.error):
+        code = resolve_key(key)
+    except KeyError:
+        return False
+    # The on-screen joystick counts. isKeyDown() and onKeyDown have to agree
+    # about what is held, or a game written with one would behave differently
+    # from the same game written with the other.
+    try:
+        if code in current_engine().events.virtual_keys:
+            return True
+    except Exception:                                          # noqa: BLE001
+        pass
+    try:
+        return bool(pygame.key.get_pressed()[code])
+    except (IndexError, pygame.error):
         return False
 
 

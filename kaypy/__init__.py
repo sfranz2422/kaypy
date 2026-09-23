@@ -68,9 +68,16 @@ __all__ = [
 ]
 
 
-def kaypy(width=800, height=600, background=(0, 0, 0)):
-    """Starts the engine. It has to come first, before anything else."""
-    return Engine(width=width, height=height, background=background)
+def kaypy(width=800, height=600, background=(0, 0, 0), joystick=False):
+    """Starts the engine. It has to come first, before anything else.
+
+    `joystick=True` puts a d-pad and two buttons on the screen for playing
+    with a thumb. They hold the arrow keys, `space` and `z`, so every game
+    already written works on a phone without changing. Pass a list to choose
+    what the two buttons send: `joystick=["space", "x"]`.
+    """
+    return Engine(width=width, height=height, background=background,
+                  joystick=joystick)
 
 
 
