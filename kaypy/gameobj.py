@@ -69,19 +69,89 @@ class GameObj:
     # ---- component wiring -------------------------------------------------
 
     def use(self, comp):
-        """Attach a single component or tag string."""
+        """Attach a single component, tag string, or dict of your own values."""
         if isinstance(comp, str):
             self.tags.add(comp)
             return
+        if isinstance(comp, dict):
+            self._use_values(comp)
+            return
         if not isinstance(comp, Comp):
             raise TypeError(
-                f"add([...]) expects components or tag strings, got {comp!r}"
+                f"add([...]) expects components, tag strings, or a dict of "
+                f"your own values — got {comp!r}"
             )
         self._comps[comp.id] = comp
         comp.add(self)
 
+    def _use_values(self, values):
+        """Put your own values on the object, from a dict in the list.
+
+            add([sprite("bean"), pos(10, 10), {"hits": 0, "dir": 1}])
+
+        KAPLAY allows a plain object among the components and merges its keys
+        onto the game object, so this is the same thing in Python, and their
+        examples translate. It saves a line — the alternative is to name the
+        object and then assign — and, more usefully, it puts a thing's state
+        in the same list as the rest of what it is.
+
+        WHY TWO KINDS OF KEY ARE REFUSED
+
+        A key a component already owns would shadow it. `{"pos": vec2(0, 0)}`
+        alongside `pos(10, 10)` looks like it sets the position and instead
+        replaces the component's own attribute with a bare value, after which
+        the object is half a game object and dies somewhere else entirely.
+        Silently winning that race is the worst outcome; saying so here is a
+        one-line fix.
+
+        A key that is not a valid Python name — `{"my flag": True}` — can be
+        set and never read, because `obj.my flag` is a syntax error. Storing
+        it would be a value that exists and cannot be used.
+
+        For a flag that says what something IS, a tag is usually better than
+        an attribute: `get("enemy")` finds them all and `onCollide("enemy")`
+        already works on it. Attributes are for per-object state — `hits`,
+        `cooldown`, `dir`.
+        """
+        import keyword
+
+        for name, value in values.items():
+            if not isinstance(name, str) or not name.isidentifier() \
+                    or keyword.iskeyword(name):
+                raise ValueError(
+                    f"add([... {{{name!r}: ...}}]) — {name!r} cannot be a "
+                    f"name on a game object, so nothing could ever read it "
+                    f"back. Use a plain name like \"hits\" or \"dir\"."
+                )
+            if name.startswith("_"):
+                raise ValueError(
+                    f"add([... {{{name!r}: ...}}]) — names starting with an "
+                    f"underscore are the engine's own. Pick another."
+                )
+            owner = next((c for c in self._comps.values()
+                          if hasattr(c, name)), None)
+            if owner is not None:
+                raise ValueError(
+                    f"add([... {{{name!r}: ...}}]) — {type(owner).__name__} "
+                    f"already gives this object '{name}', and setting it here "
+                    f"would break that component.\n"
+                    f"    Rename yours, or set it after add() if you really "
+                    f"mean to change the component's value."
+                )
+            object.__setattr__(self, name, value)
+
     def use_all(self, comp_list):
+        # Dicts go on last, whatever order they were written in, so that the
+        # clash check in _use_values sees every component. Written first in
+        # the list — add([{"pos": 1}, pos(10, 10)]) — a dict would otherwise
+        # be checked against no components at all, and the plain attribute it
+        # set would then shadow the real pos() completely, because an
+        # attribute in __dict__ is found before __getattr__ ever runs.
+        values = [c for c in comp_list if isinstance(c, dict)]
         for c in comp_list:
+            if not isinstance(c, dict):
+                self.use(c)
+        for c in values:
             self.use(c)
 
     def has(self, comp_id: str) -> bool:

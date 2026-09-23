@@ -69,11 +69,26 @@ def _surface(who):
 
 
 def _place(pos, fixed, camera):
-    """A world (or screen) position, as pixels on the surface."""
+    """A world (or screen) position, as pixels on the surface.
+
+    The zoom that comes back is a Vec2, because the camera can be scaled a
+    different amount on each axis. Sizes with a width and a height use both
+    of them; see `_thickness` for the things that cannot."""
     point = pos if isinstance(pos, Vec2) else Vec2(pos[0], pos[1])
     if fixed:
-        return point, 1.0
+        return point, Vec2(1.0, 1.0)
     return camera.world_to_screen(point), camera.scale
+
+
+def _thickness(zoom):
+    """One number, for things that only have one.
+
+    A line's width, a corner radius, the size of a letter: none of these can
+    be two different numbers, however the camera is stretched, because
+    nothing in pygame can draw a line that is thicker across than along. The
+    smaller of the two axes is the safe answer — the larger makes an outline
+    swell out past the shape it is supposed to be edging."""
+    return min(zoom.x, zoom.y)
 
 
 def _colour(color, opacity):
@@ -107,11 +122,13 @@ def drawRect(pos=None, width=0, height=0, color=None, opacity=1.0,
     """A rectangle. `radius` rounds the corners; `outline` draws only the edge."""
     screen, camera = _surface("drawRect")
     at, zoom = _place(pos or Vec2(0, 0), fixed, camera)
-    w, h = max(1, int(width * zoom)), max(1, int(height * zoom))
+    w, h = max(1, int(width * zoom.x)), max(1, int(height * zoom.y))
+    thick = _thickness(zoom)
 
     surf = pygame.Surface((w, h), pygame.SRCALPHA)
     pygame.draw.rect(surf, _colour(color, opacity), pygame.Rect(0, 0, w, h),
-                     width=int(outline * zoom), border_radius=int(radius * zoom))
+                     width=int(outline * thick),
+                     border_radius=int(radius * thick))
     _put(screen, surf, at, anchor)
 
 
@@ -120,12 +137,22 @@ def drawCircle(pos=None, radius=0, color=None, opacity=1.0, outline=0,
     """A circle, centred on `pos`."""
     screen, camera = _surface("drawCircle")
     at, zoom = _place(pos or Vec2(0, 0), fixed, camera)
-    r = max(1, int(radius * zoom))
+    # A circle in a world stretched twice as wide is an ellipse, the same
+    # way a square in it is an oblong. Drawing it as a circle of some
+    # average radius would leave it the one shape on screen that did not
+    # agree with the camera.
+    rx = max(1, int(radius * zoom.x))
+    ry = max(1, int(radius * zoom.y))
 
-    surf = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
-    pygame.draw.circle(surf, _colour(color, opacity), (r, r), r,
-                       width=int(outline * zoom))
-    screen.blit(surf, (at.x - r, at.y - r))
+    surf = pygame.Surface((rx * 2, ry * 2), pygame.SRCALPHA)
+    box = pygame.Rect(0, 0, rx * 2, ry * 2)
+    edge = int(outline * _thickness(zoom))
+    if rx == ry:
+        pygame.draw.circle(surf, _colour(color, opacity), (rx, ry), rx,
+                           width=edge)
+    else:
+        pygame.draw.ellipse(surf, _colour(color, opacity), box, width=edge)
+    screen.blit(surf, (at.x - rx, at.y - ry))
 
 
 def drawLine(p1=None, p2=None, width=1, color=None, opacity=1.0, fixed=False):
@@ -133,7 +160,7 @@ def drawLine(p1=None, p2=None, width=1, color=None, opacity=1.0, fixed=False):
     screen, camera = _surface("drawLine")
     a, zoom = _place(p1 or Vec2(0, 0), fixed, camera)
     b, _ = _place(p2 or Vec2(0, 0), fixed, camera)
-    thickness = max(1, int(width * zoom))
+    thickness = max(1, int(width * _thickness(zoom)))
 
     if opacity >= 1:
         pygame.draw.line(screen, _colour(color, 1.0),
@@ -171,7 +198,7 @@ def drawText(text="", pos=None, size=22, color=None, opacity=1.0,
     screen, camera = _surface("drawText")
     at, zoom = _place(pos or Vec2(0, 0), fixed, camera)
 
-    font = current_engine()._get_font(max(1, int(size * zoom)))
+    font = current_engine()._get_font(max(1, int(size * _thickness(zoom))))
     surf = font.render(str(text), True, _colour(color, 1.0)[:3])
     if opacity < 1:
         surf = surf.copy()
@@ -193,8 +220,8 @@ def drawSprite(sprite="", pos=None, frame=0, width=None, height=None,
     index = max(0, min(int(frame), len(asset.frames) - 1))
     surf = asset.frames[index]
 
-    w = (width if width is not None else surf.get_width()) * zoom
-    h = (height if height is not None else surf.get_height()) * zoom
+    w = (width if width is not None else surf.get_width()) * zoom.x
+    h = (height if height is not None else surf.get_height()) * zoom.y
     if (int(w), int(h)) != surf.get_size():
         surf = pygame.transform.scale(surf, (max(1, int(w)), max(1, int(h))))
     if angle:

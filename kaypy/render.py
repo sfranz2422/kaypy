@@ -63,13 +63,14 @@ class RenderSystem:
         else:
             # Camera zoom scales both the surface and the anchor offset,
             # so the anchor point stays put on screen as you zoom.
-            if camera.scale != 1:
-                nw = max(int(surf.get_width() * camera.scale), 1)
-                nh = max(int(surf.get_height() * camera.scale), 1)
+            zoom = camera.scale
+            if zoom.x != 1 or zoom.y != 1:
+                nw = max(int(surf.get_width() * zoom.x), 1)
+                nh = max(int(surf.get_height() * zoom.y), 1)
                 surf = pygame.transform.scale(surf, (nw, nh))
             anchor_screen = camera.world_to_screen(world_pos)
             _blit(screen, surf, angle,
-                  (offset_x * camera.scale, offset_y * camera.scale),
+                  (offset_x * zoom.x, offset_y * zoom.y),
                   (anchor_screen.x, anchor_screen.y))
 
     def _build_surface(self, obj, w, h):
@@ -121,8 +122,8 @@ class RenderSystem:
             from .vec2 import Vec2
             tl_world = Vec2(rect.x, rect.y)
             tl = camera.world_to_screen(tl_world)
-            w = rect.width * camera.scale
-            h = rect.height * camera.scale
+            w = rect.width * camera.scale.x
+            h = rect.height * camera.scale.y
             pygame.draw.rect(
                 screen, (0, 255, 0), pygame.Rect(tl.x, tl.y, w, h), width=1
             )

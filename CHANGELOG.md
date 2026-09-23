@@ -1,5 +1,87 @@
 # Changelog
 
+## 0.13.0
+
+**New: a dict in the component list is your own values.**
+
+```python
+player = add([sprite("bean"), pos(120, 80), area(),
+              "player",                 # a tag: what it IS
+              {"hits": 0, "dir": 1}])   # a dict: its own state
+
+player.hits += 1
+```
+
+KAPLAY allows a plain object among the components and merges its keys onto
+the game object; this is the same thing in Python, so their examples
+translate. A tag still says what something is — `get("enemy")` finds them
+all, `onCollide("enemy")` works off it — and a dict is for per-object state.
+
+Two kinds of key are refused rather than accepted quietly:
+
+* one a component already owns. `{"pos": vec2(0, 0)}` beside `pos(10, 10)`
+  reads like it sets the position; what it does is put a plain value in the
+  object's own `__dict__`, where Python finds it *before* the component
+  delegation ever runs — so the component is still attached, still being
+  moved by the physics system, and completely unreachable. The object reads
+  `vec2(0, 0)` while the component says `vec2(10, 10)`.
+* one that is not a valid Python name. `{"my flag": True}` could be set and
+  never read back, because `obj.my flag` is a syntax error.
+
+Dicts are applied after every component, whatever order they were written
+in, so the clash above is caught even when the dict comes first in the list
+— which is the case where there are no components to compare against yet,
+and the one a naive implementation gets wrong while passing every other
+check.
+
+**The camera scale is now a vector.**
+
+```python
+setCamScale(2)                 # twice as big, both ways, as before
+setCamScale(vec2(2, 0.4))      # twice as wide and squashed flat
+```
+
+A plain number still means the same amount on both axes, so nothing written
+before this changes. A `vec2` lets the world be stretched: a letterboxed
+cutscene, a squash as something lands, a deliberately wrong aspect ratio.
+
+Everything obeys it together — sprites, child objects, the debug boxes under
+F1, drawn text, and the mouse. A circle drawn with `drawCircle` under a
+stretched camera is now an ellipse, because a circle that stayed round would
+be the one shape on screen not agreeing with the camera. Things that can only
+have one number — a line's thickness, a corner radius, the size of a letter —
+take the smaller of the two axes; the larger makes an outline swell out past
+the shape it is edging.
+
+`setCamScale(0)` is now refused. It made the world infinitely small and then
+everything after it divided by zero.
+
+Keeping a number and a separate "scaleY" beside it was the other option, and
+it is the one that rots: every place multiplying by the scale has to remember
+there are two of them, and the places that forget are the ones nobody looks
+at. `tests/test_cam_scale.py` reads pixels back off the surface rather than
+trusting the arithmetic, and catches both halves of that — a renderer using
+`x` for the height fails the stretch checks, and a `screen_to_world` using
+`x` for both axes fails only the round-trip check, which is right, because
+that one does not affect what is drawn, only where a click lands.
+
+**Child objects are documented at last.** `obj.add([...])` has worked since
+the guide's lesson 8 and was never in the API reference:
+
+```python
+player = add([sprite("bean"), pos(100, 200), area()])
+sword = player.add([rect(6, 30), pos(28, 6), color(200, 200, 220)])
+```
+
+A child's `pos()` is measured from its parent rather than the screen, it
+moves when the parent moves, and destroying the parent destroys it. That is
+the difference from `follow()`: a follower is a separate object kept in
+agreement every frame, for two things that meet later in the game; a child is
+part of the thing.
+
+`examples/knight_and_camera.py` is both — a sword, shield and name tag
+hanging off a knight, and three camera keys including the squashed one.
+
 ## 0.12.0
 
 **New: `sentry()`.** Notice when something comes into view.
