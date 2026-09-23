@@ -2,6 +2,22 @@
 
 ## 0.13.0
 
+**A new check: nothing here may need a second install.**
+
+`pip install kaypy` brings pygame-ce and stops, which is why four commands
+get a game on screen on a school laptop. Nothing enforced that at the moment
+somebody broke it — and the 0.13.0 camera test broke it, reading pixels back
+with `pygame.surfarray`, which quietly needs numpy. It passed on a machine
+that had numpy installed for something else and failed in CI, which has
+exactly what the package asks for and nothing more.
+
+The test now uses `pygame.mask`, which is core pygame-ce, and produces
+identical numbers. `tests/test_no_extra_deps.py` walks every file in
+`kaypy/`, `tests/` and `examples/` and fails on an import of anything that is
+not the standard library, pygame, or kaypy — plus the half an import scan
+misses, since `pygame.surfarray` is an attribute of a module that IS allowed
+and raises only when touched, only without numpy.
+
 **New: a dict in the component list is your own values.**
 
 ```python

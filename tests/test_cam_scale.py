@@ -59,15 +59,32 @@ def reset():
 
 
 def lit_box(eng):
-    """Draw one frame and report the bounding box of everything non-black."""
+    """Draw one frame and report the bounding box of everything non-black.
+
+    Through pygame.mask rather than pygame.surfarray. surfarray is the
+    obvious way to read pixels back and it needs numpy, which kaypy does not
+    depend on — `pygame-ce==2.5.8` is the whole of `dependencies`. Written
+    that way this file passed on any machine that happened to have numpy
+    installed for something else, and failed in CI, which has exactly what
+    the package asks for and nothing more. That is the right outcome and a
+    bad way to find out.
+
+    pygame.mask is core pygame-ce. from_threshold marks the pixels near
+    black; inverting it marks everything that was drawn.
+    """
     screen = eng.screen
     screen.fill((0, 0, 0))
     eng.render.draw(eng._objs, screen, eng.camera, False, eng.events.draw_handlers)
-    arr = pygame.surfarray.array3d(screen).sum(axis=2)     # [x][y]
-    xs, ys = (arr > 40).nonzero()
-    if len(xs) == 0:
+
+    mask = pygame.mask.from_threshold(screen, (0, 0, 0), (14, 14, 14, 255))
+    mask.invert()
+    rects = mask.get_bounding_rects()
+    if not rects:
         return None
-    return (int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max()))
+    box = rects[0]
+    for other in rects[1:]:
+        box = box.union(other)
+    return (box.left, box.top, box.right - 1, box.bottom - 1)
 
 
 def measured(scale):
