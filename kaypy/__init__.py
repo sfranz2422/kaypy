@@ -30,6 +30,8 @@ from .comps.move import move, offscreen, tile
 from .comps.health import health
 from .comps.lifespan import lifespan
 from .comps.follow import follow
+from .comps.sentry import sentry
+from .raycast import raycast
 
 # ---- drawing straight to the screen, and remembering things -------------
 from .drawing import (drawRect, drawCircle, drawLine, drawLines, drawText,
@@ -46,6 +48,7 @@ __all__ = [
     "pos", "sprite", "rect", "circle", "text", "area", "body",
     "anchor", "scale", "rotate", "color", "opacity", "outline", "z", "fixed",
     "move", "offscreen", "tile", "state", "health", "lifespan", "follow",
+    "sentry",
     "onUpdate", "onKeyDown", "onKeyPress", "onKeyRelease", "onClick",
     "onMouseDown", "onMousePress", "onMouseRelease", "onMouseMove",
     "isMouseDown", "isMousePressed", "isMouseReleased", "isMouseMoved",
@@ -60,6 +63,7 @@ __all__ = [
     "say", "ask", "isShowing", "close",
     "rand", "randi", "choose", "chance", "lerp", "clamp", "wave",
     "time", "destroy", "destroyAll", "isKeyDown", "rgb",
+    "raycast",
     "deg2rad", "rad2deg",
     "mousePos", "toWorld",
     "setCamPos", "setCamScale", "shake",

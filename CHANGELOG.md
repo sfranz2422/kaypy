@@ -1,5 +1,68 @@
 # Changelog
 
+## 0.12.0
+
+**New: `sentry()`.** Notice when something comes into view.
+
+```python
+guard = add([sprite("ghosty"), pos(400, 120), area(), rotate(90),
+             sentry("player", fieldOfView=70, range=300, lineOfSight=True)])
+
+@guard.onObjectsSpotted
+def seen(objects):
+    say("Hey! Stop right there.")
+```
+
+Three tests, each optional: a cone (`direction` + `fieldOfView`), a distance
+(`range`), and whether walls stop it (`lineOfSight`). Leave `direction` out
+and it looks wherever `rotate()` has the object turned, so sweeping a torch
+is one line changing `guard.angle`. `onObjectsSpotted` fires on the edge —
+when it goes from seeing nothing to seeing something — and `.spotted` is the
+current list for the frames in between.
+
+`range` is not in KAPLAY's sentry, which has no distance at all: a guard
+facing right sees to the far end of a scrolling level. Leave `range` out and
+it behaves exactly as KAPLAY's does.
+
+`checkFrequency` defaults to ten times a second rather than sixty. A dozen
+guards each casting a ray every frame is real work in a browser, to answer a
+question that has not changed in 16 ms, and a tenth of a second late to
+notice an intruder is not something a player can perceive.
+
+**New: `raycast()`.** What a straight line hits first.
+
+```python
+hit = raycast(player.pos, vec2(1, 0), ignore=[player])
+if hit:
+    print(hit.obj, hit.distance, hit.normal)
+```
+
+`sentry(lineOfSight=True)` is built on it, and it stands on its own for a
+laser sight, an instant bullet, or "what did I click on". `exclude` skips
+tags; `ignore` skips particular objects, which is what you need when casting
+from an object's own position — the ray starts inside that object's own box,
+so without it a guard learns only that it can see itself. That was a real
+bug here, caught by a test, before it was a documented parameter.
+
+Three things in this release were wrong first and are worth naming, because
+each passed a plausible test:
+
+* the ray-vs-box normal was computed by negating a sign during the slab
+  swap. Every rightward ray was correct and every leftward one was
+  backwards.
+* `checkFrequency` zeroed its accumulator instead of subtracting the
+  interval. Six frames of 1/60 come to 0.09999999999, just under a tenth,
+  so every check waited a seventh frame and `checkFrequency=10` quietly ran
+  at eight and a half.
+* the test for the cone's wrapping angle used 350 and 10 degrees, which is
+  the seam you expect from thinking in 0–360 and not the seam the code has:
+  angles come back between -180 and 180, so the discontinuity is at straight
+  LEFT. The test passed against an implementation with no wrap handling at
+  all. It now uses 175 and 185, and fails against it.
+
+`examples/stealth_guard.py` is a guard sweeping a torch you can hide from,
+with the cone drawn from the same three numbers the component was given.
+
 ## 0.11.0
 
 **New: `follow()`.** Keep one object where another one is.
