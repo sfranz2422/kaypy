@@ -59,6 +59,26 @@ class PhysicsSystem:
 
 
 class CollisionSystem:
+    # How far below itself a body looks for a floor.
+    #
+    # Resting on something is a TOUCH, not an overlap, and an overlap is the
+    # only thing collision resolution can see. So "am I standing on
+    # something" cannot be answered by "did I get pushed out of something
+    # this frame" — on any frame where the body does not sink into the floor,
+    # that answer is no, and the game is told the player is in mid-air.
+    #
+    # A frame of zero length does exactly that: nothing moves, so nothing
+    # overlaps, so nothing resolves. Natively it never comes up, because
+    # clock.tick(60) sleeps and dt is never zero. In a browser the clock is
+    # not paced, and it happens constantly — which is why a bean resting on
+    # the floor reported landing over and over, and why isGrounded() flicked
+    # false often enough to let a player jump again in mid-air.
+    #
+    # One pixel: far enough to cover the sub-pixel gap a float position
+    # leaves, not so far that hovering above a platform counts as standing
+    # on it.
+    GROUND_PROBE = 1.0
+
     def __init__(self):
         self._touching = {}  # obj id -> set of other obj ids currently overlapping
 
@@ -115,6 +135,27 @@ class CollisionSystem:
         for oid in list(self._touching):
             if oid not in live_ids:
                 del self._touching[oid]
+
+        # Anything resting on something solid is grounded, whether or not it
+        # overlapped it this frame. See GROUND_PROBE.
+        solid = [o for o in area_objs if o.has("body")]
+        fresh = {o._id: o.comp("area").get_rect() for o in solid}
+        for obj in solid:
+            body = obj.comp("body")
+            if body.isStatic or body._pending_grounded:
+                continue
+            mine = fresh[obj._id]
+            probe = mine.move(0, self.GROUND_PROBE)
+            for other in solid:
+                if other is obj:
+                    continue
+                theirs = fresh[other._id]
+                # Below, not merely touching: a wall alongside is not a
+                # floor, and something the body is already inside of is not
+                # one either.
+                if probe.colliderect(theirs) and theirs.top >= mine.bottom - 0.5:
+                    body._pending_grounded = True
+                    break
 
         for obj in objs:
             if obj.has("body"):

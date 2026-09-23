@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.10.1
+
+**Fixed: a character standing still on the floor was reported as being in
+mid-air, several times a second.** In a browser. `onGround` fired over and
+over, `isGrounded()` flickered false — so a player could jump again in
+mid-air — and anything keyed on it, like a landing animation, stuttered.
+
+Resting on a floor is a **touch**. Collision resolution can only see an
+**overlap**. Grounded was being inferred from "did I get pushed out of
+something this frame", which is a different question, and answers no on any
+frame where the body does not sink into the floor.
+
+A frame of zero length does exactly that: nothing moves, so nothing overlaps,
+so nothing resolves. It never comes up natively, where `clock.tick(60)`
+sleeps and dt is never zero; in a browser the clock is not paced and it
+happens constantly. Which is why this was invisible on a desktop and obvious
+on a shared link.
+
+Grounded is now a contact test — is there something solid within a pixel
+below me — rather than a side effect of resolution. `tests/test_grounded.py`
+holds it down, including that the probe has not made it *too* generous:
+in the air, on the way up, and standing beside a wall are all still not
+grounded.
+
 ## 0.10.0
 
 **A d-pad on the screen, for playing with a thumb.**
