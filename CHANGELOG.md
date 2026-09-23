@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.10.2
+
+**Fixed: a character standing still on the floor twitched one pixel, several
+times a second.** Visible in a browser, invisible on a desktop, and nothing
+to do with the collision failing.
+
+A resting body sinks a fraction of a pixel under gravity every frame and is
+pushed back out every frame. It landed within about a hundred-thousandth of
+a pixel of where it started — which is the width of a 32-bit float near
+y=512, and 32-bit floats are what `pygame.FRect` stores, so that is as
+accurate as the push-out can be. Half the time the body settled at 512.00001
+and drew on row 512, half the time at 511.99999 and drew on row 511. It was
+never moving. It was one position straddling a whole number, read two ways.
+
+A body found to be standing on something is now placed exactly on that
+surface. Exactly is meant literally: nudging it by however far it has
+strayed is not the same thing, because the nudge is computed from where the
+body currently is and so inherits that position's error — in the browser
+that left a resting bean alternating between 498.0 and 497.99999999999994,
+one unit in the last place of a double, which `int()` calls 497. So the
+resting position is assigned outright, from the surface's top edge and the
+body's own height and anchor, none of which change while it stands there.
+The same inputs give the same bits, so a body that is not moving holds one
+identical number for as long as it stands still, and the pixel it draws on
+cannot change.
+
+Two things came with it:
+
+* a grounded body no longer carries fall speed. Gravity kept adding to
+  `vel.y` on any frame too short to sink far enough to be pushed back, which
+  in a browser happens in bursts. It never showed on screen, but game code
+  reads `vel.y`.
+* a body on its way up is no longer reported as grounded just for passing
+  within a pixel of a floor — which was a free double jump on a short frame
+  straight after take-off.
+
+`tests/test_resting.py` measures the **drawn** position rather than `pos.y`.
+Watching `pos.y` is how this survived a first attempt at fixing it: it looked
+steady to a decimal place or two while the bean went on twitching.
+
 ## 0.10.1
 
 **Fixed: a character standing still on the floor was reported as being in

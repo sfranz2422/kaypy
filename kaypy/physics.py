@@ -142,7 +142,12 @@ class CollisionSystem:
         fresh = {o._id: o.comp("area").get_rect() for o in solid}
         for obj in solid:
             body = obj.comp("body")
-            if body.isStatic or body._pending_grounded:
+            if body.isStatic:
+                continue
+            if body.vel.y < 0:
+                # On the way up. Passing within a pixel of a floor is not
+                # standing on it, and a body that has just jumped must not
+                # be handed a second jump on its way off the ground.
                 continue
             mine = fresh[obj._id]
             probe = mine.move(0, self.GROUND_PROBE)
@@ -155,12 +160,81 @@ class CollisionSystem:
                 # one either.
                 if probe.colliderect(theirs) and theirs.top >= mine.bottom - 0.5:
                     body._pending_grounded = True
+                    self._rest_on(obj, body, other)
                     break
 
         for obj in objs:
             if obj.has("body"):
                 b = obj.comp("body")
                 b._apply_grounded(b._pending_grounded)
+
+    def _rest_on(self, obj, body, other):
+        """Park a body that is standing on something, on the exact pixel.
+
+        THE BEAN THAT TWITCHED ON THE FLOOR
+
+        A bean standing perfectly still in a platformer jittered one pixel,
+        several times a second. Read off the canvas it was the identical run
+        of pixel rows, redrawn one row up, then back, then up again.
+
+        Every frame a resting body sinks a little — gravity x dt squared —
+        and every frame the push-out lifts it back. Landing exactly where it
+        started would make that invisible, and it very nearly does: the
+        error is around a hundred-thousandth of a pixel. That is not a
+        rounding artefact of the maths, it is the width of a 32-bit float
+        near y=512, which is what pygame.FRect stores. The push-out is
+        computed from those rects, so it is right to about 1e-5 and no
+        better.
+
+        A hundred-thousandth of a pixel is nothing to a player and
+        everything to `int()`. Half the time the body settles at 512.00001
+        and draws on row 512; the other half it settles at 511.99999 and
+        draws on row 511. Nothing has moved. It is the same position
+        straddling a whole number, being read two different ways.
+
+        So the fix is to put the body exactly on the surface, so that a
+        body which is not moving holds one number exactly, frame after
+        frame, and the renderer has nothing to be undecided about.
+
+        "Exactly" has to mean exactly. Nudging the body by however far it
+        has strayed — `pos.y += gap` — sounds like the same thing and is
+        not: the nudge is computed from where the body currently is, so it
+        inherits that position's error and lands a hair off, in a slightly
+        different place each frame. Measured in the browser, that left a
+        resting bean alternating between 498.0 and 497.99999999999994. One
+        unit in the last place of a double, and `int()` calls it 497.
+
+        So the resting position is ASSIGNED rather than adjusted, and it is
+        computed only from things that do not change while the body sits
+        there — the surface's top edge, the body's own height and anchor.
+        The same inputs give the same bits, so the body holds one identical
+        double for as long as it stands still, and the pixel it draws on
+        cannot change no matter where the rounding boundary happens to sit.
+        """
+
+        if body.vel.y > 0:
+            # A body parked on the floor should not be carrying fall speed.
+            # Game code reads vel.y, and gravity keeps adding to it on any
+            # frame too short to sink far enough to be pushed back out —
+            # which in a browser, where the clock is not paced, happens in
+            # bursts. (This is not what stops the twitching. The snap is.)
+            body.vel.y = 0.0
+
+        if not obj.has("pos"):
+            return
+        from .geometry import get_size, get_topleft, get_world_pos
+
+        height = get_size(obj)[1]
+        anchor_y = obj.comp("anchor").anchor.y if obj.has("anchor") else -1
+        # What get_topleft subtracts from the position to find the top edge.
+        offset = (anchor_y + 1) / 2 * height
+
+        # pos() is relative to a parent, if there is one.
+        parent_y = get_world_pos(obj.parent).y if obj.parent is not None else 0.0
+        resting = get_topleft(other).y - height + offset - parent_y
+
+        if abs(resting - obj.comp("pos").pos.y) <= self.GROUND_PROBE:
+            obj.comp("pos").pos.y = resting
 
     @staticmethod
     def _entry_axis_is_vertical(body_a, body_b, overlap_x, overlap_y) -> bool:
