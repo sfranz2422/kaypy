@@ -22,6 +22,12 @@
 **A real-Python game engine with [KAPLAY](https://kaplayjs.com)'s API — runs on your
 machine, exports to the browser.**
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/sfranz2422/kaypy/main/docs/demo.gif"
+       alt="Sixteen lines of Python, and a character that falls, lands and jumps."
+       width="820">
+</p>
+
 Every name is KAPLAY's own name, in KAPLAY's own order, with KAPLAY's own
 arguments: `add`, `sprite`, `onKeyDown`, `loadSpriteAtlas`, `isGrounded`. So
 KAPLAY's documentation and every KAPLAY example on the internet still tells you

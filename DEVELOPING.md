@@ -450,3 +450,24 @@ makes an old install keep fetching the assets it was published with.
   (`pygame-web.github.io`). Folder assembly and file gathering are verified
   there; the actual WASM packaging is verified on a normal machine. The browser
   side has been driven end-to-end against a real local server.
+
+
+## The demo GIF
+
+`docs/demo.gif` is generated, not screen-recorded:
+
+```bash
+python3 tools/make_demo_gif.py
+```
+
+The code half is `tools/demo_program.py` run through the same highlighter the
+website uses; the game half is that same file **executed**, with spacebar
+presses fed through the real event path, photographed off the surface kaypy
+drew. So the program in the picture and the picture cannot disagree — an
+earlier version built the scene separately and had already drifted to two
+platforms and a walking bean that appeared nowhere in the code beside it.
+
+It refuses to build if a line of the program is too wide for the panel, if the
+program is too long to fit without scrolling, or if nothing moves in the
+captured frames. Needs Pillow and Pygments, which the package itself does not
+— hence `tools/`, which `tests/test_no_extra_deps.py` does not scan.
