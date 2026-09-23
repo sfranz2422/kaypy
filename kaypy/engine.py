@@ -110,6 +110,13 @@ class Engine:
         self.collision = CollisionSystem()
         self.render = RenderSystem()
 
+        # A panel belongs to a game, not to a page. In a browser IDE the
+        # page outlives the game — press Run twice and this constructor runs
+        # again — so a panel left up by the last run would still be on screen,
+        # holding the keyboard, over a game that no longer exists.
+        from . import panel as _panel
+        _panel.reset()
+
         self._objs: list[GameObj] = []
         self._scenes: dict[str, callable] = {}
         self._current_scene = None
@@ -120,6 +127,7 @@ class Engine:
         self._elapsed = 0.0
         self._running = True
         self._started = False
+        self._paused = False
         self._font_cache = {}
         self.is_web = sys.platform == "emscripten"
 
@@ -142,6 +150,26 @@ class Engine:
 
     def dt(self):
         return self._dt
+
+    # ---- pause -------------------------------------------------------------
+    #
+    # Pausing freezes the world and leaves the picture up: timers, physics,
+    # collisions and every onUpdate stop, and the frame is still drawn, so
+    # the game sits there behind whatever you put on top of it.
+    #
+    # Input keeps being delivered while paused. That is deliberate — a pause
+    # menu that cannot hear the key that un-pauses it is not a pause menu —
+    # and it is harmless because dt is zero, so a handler that moves the
+    # player moves it nowhere. See _main_loop.
+
+    def pause(self):
+        self._paused = True
+
+    def resume(self):
+        self._paused = False
+
+    def isPaused(self):
+        return self._paused
 
     def elapsed(self):
         return self._elapsed
@@ -210,6 +238,12 @@ class Engine:
         self._scenes[name](*args)
 
     def _clear_scene(self):
+        # A panel does not survive go(). Everything it was asking about is
+        # being thrown away, and its callback would fire into the old scene.
+        from . import panel as _panel
+        _panel.reset()
+        self._paused = False
+
         for obj in list(self._objs):
             obj.destroy()
         self._objs.clear()
@@ -287,35 +321,67 @@ class Engine:
             # real build, dt alternated between 16ms and the 50ms cap
             # below. So on web just measure, don't pace.
             elapsed = self.clock.tick() if self.is_web else self.clock.tick(60)
-            self._dt = min(elapsed / 1000.0, 0.05)
-            self._elapsed += self._dt
 
-            self.events.process_pygame_events(pg_events, self._objs)
-            self.events.run_update_handlers(self._objs)
+            # Paused means no time passes. dt is what every kind of movement
+            # in kaypy is scaled by — .move(), .moveTo(), gravity, tweens —
+            # so zeroing it here is what actually holds the world still, and
+            # it holds things this loop never sees, like a .move() called
+            # from inside a key handler.
+            #
+            # _elapsed stops too, so time() does not run on. Otherwise a
+            # wave() or a tween would resume somewhere further along its
+            # curve than where it stopped, and a bobbing cloud would jump
+            # the moment the game came back.
+            if self._paused:
+                self._dt = 0.0
+            else:
+                self._dt = min(elapsed / 1000.0, 0.05)
+                self._elapsed += self._dt
 
-            for obj in list(self._objs):
-                if not obj.exists():
-                    continue
-                for comp in list(obj._comps.values()):
-                    comp.update(obj)
-                if "update" in obj._event_handlers:
-                    obj._fire("update")
+            # A panel owns the input while it is up, and the game does not
+            # see any of it. That is what makes it modal: a click meant for
+            # an answer must not also fire an onClick in the game behind it.
+            #
+            # Note this is decided by the panel, not by being paused. A
+            # hand-rolled pause menu — pause() plus onKeyPress("escape") —
+            # keeps working, because without a panel input goes where it
+            # always did. Input is dispatched even while paused on purpose:
+            # a pause menu has to be able to hear the key that un-pauses it,
+            # and that is safe because dt is zero, so a held arrow key still
+            # fires and moves the player exactly nowhere.
+            from . import panel as _panel
+            if not _panel.handle_events(pg_events):
+                self.events.process_pygame_events(pg_events, self._objs)
 
-            self.timers.update(self._dt)
-            # Movement and collision run together, in as many substeps as
-            # it takes to keep anything from jumping clean over a wall it
-            # should have hit (see PhysicsSystem.substeps_for). Normal
-            # frames need exactly one, so this costs nothing until
-            # something is genuinely moving fast.
-            substeps = self.physics.substeps_for(self._objs, self._dt)
-            sub_dt = self._dt / substeps
-            for _ in range(substeps):
-                self.physics.step(self._objs, sub_dt)
-                self.collision.step(self._objs)
+            if not self._paused:
+                self.events.run_update_handlers(self._objs)
+
+                for obj in list(self._objs):
+                    if not obj.exists():
+                        continue
+                    for comp in list(obj._comps.values()):
+                        comp.update(obj)
+                    if "update" in obj._event_handlers:
+                        obj._fire("update")
+
+                self.timers.update(self._dt)
+                # Movement and collision run together, in as many substeps as
+                # it takes to keep anything from jumping clean over a wall it
+                # should have hit (see PhysicsSystem.substeps_for). Normal
+                # frames need exactly one, so this costs nothing until
+                # something is genuinely moving fast.
+                substeps = self.physics.substeps_for(self._objs, self._dt)
+                sub_dt = self._dt / substeps
+                for _ in range(substeps):
+                    self.physics.step(self._objs, sub_dt)
+                    self.collision.step(self._objs)
 
             self.screen.fill(self._background)
             self.render.draw(self._objs, self.screen, self.camera, debug.inspect,
                              self.events.draw_handlers)
+            # Last, so it is over everything — including anything the game
+            # drew in onDraw, which is where a HUD lives.
+            _panel.draw(self.screen, self)
             pygame.display.flip()
 
             frame_count += 1

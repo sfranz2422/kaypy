@@ -34,6 +34,7 @@ from .comps.lifespan import lifespan
 from .drawing import (drawRect, drawCircle, drawLine, drawLines, drawText,
                       drawSprite)
 from .storage import setData, getData
+from .panel import say, ask, isShowing, close
 from .callutil import register_or_decorate
 
 __all__ = [
@@ -54,6 +55,8 @@ __all__ = [
     "wait", "loop", "tween", "easings", "onCollide",
     "scene", "go",
     "width", "height", "center", "dt", "vec2", "Vec2",
+    "pause", "resume", "isPaused",
+    "say", "ask", "isShowing", "close",
     "rand", "randi", "choose", "chance", "lerp", "clamp", "wave",
     "time", "destroy", "destroyAll", "isKeyDown", "rgb",
     "deg2rad", "rad2deg",
@@ -299,6 +302,28 @@ def center():
 
 def dt():
     return current_engine().dt()
+
+
+# ---- pause ---------------------------------------------------------------
+
+def pause():
+    """Freeze the game, leaving the picture up.
+
+    Timers, physics, collisions and every onUpdate stop. The frame is still
+    drawn, so the game sits there behind whatever you put on top of it, and
+    key handlers still run — which is what lets a pause menu un-pause itself.
+    """
+    current_engine().pause()
+
+
+def resume():
+    """Start the game moving again."""
+    current_engine().resume()
+
+
+def isPaused():
+    """Is the game frozen right now?"""
+    return current_engine().isPaused()
 
 
 def mousePos():

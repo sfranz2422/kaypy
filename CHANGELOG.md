@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.9.0
+
+**Pause a game, and ask the player something.**
+
+```python
+@player.onCollide("door")
+def at_the_door(d):
+    @ask("Which keyword starts a loop?", ["if", "for", "def"], answer=1)
+    def checked(correct):
+        if correct:
+            d.destroy()
+```
+
+- `pause()`, `resume()`, `isPaused()`. Timers, gravity, collisions and every
+  `onUpdate` stop; the frame is still drawn, so the game sits there behind
+  whatever is over it. Key handlers keep running — a pause menu has to hear
+  the key that un-pauses it — and that is safe because `dt()` is zero, so a
+  held arrow key fires its handler and moves the player nowhere. `time()`
+  stops too, so a `wave()` or a tween resumes where it stopped instead of
+  jumping forward.
+- `say()` and `ask()`. Multiple choice, answered by clicking or by pressing
+  the number beside it; or a box to type in. `answer=` gets your function
+  True or False; without it, your function is given what was picked or typed.
+  Marking ignores capitals and stray spaces.
+- `isShowing()` and `close()`.
+- A panel owns the input while it is up, so a click meant for an answer does
+  not also fire an `onClick` in the game behind it. That is keyed to the
+  panel and not to being paused, so a hand-rolled `pause()` menu still works.
+
+**The content is text, choices and links — never HTML.** In a browser the
+panel is real elements over the canvas, so the text can be selected, a link
+is a real link, and the box is a real input with a phone keyboard and paste.
+On a desktop kaypy draws it and a link opens the system browser. An
+HTML-shaped API would have been lovely in one of those places and impossible
+in the other, and `python game.py` and the web build running the same file is
+the whole point of kaypy.
+
+**They call you back rather than returning an answer.** In a browser Python
+runs on the page's own thread, so waiting for a click would stop the page —
+including the click being waited for. The tab would hang, not pause. On a
+desktop the same line would work, which is the worst kind of difference: one
+that only appears in front of a class.
+
+Fixed while building it: typing into a panel's box did nothing on the web.
+SDL, under Emscripten, puts key listeners on `document` and calls
+`preventDefault()` on them so game keys do not scroll the page, and it never
+removes them. A cancelled `keydown` still fires — which is why the number-key
+shortcut worked — but inserting a character into an `<input>` is the default
+action, and that is what was being cancelled. The panel now takes keys at
+`window` in the capture phase, which runs before `document`, and stops them
+propagating so SDL never sees them.
+
 ## 0.8.0
 
 **`kaplay()` is gone.** 0.7.0 kept it as an alias for anyone who had already
