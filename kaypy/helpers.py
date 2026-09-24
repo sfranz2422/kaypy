@@ -70,6 +70,26 @@ def isKeyDown(key):
         return False
 
 
+# The eight named colours, as plain (r, g, b) tuples — the same names and the
+# same values Kaplay uses, because they are simply the corners of the RGB
+# cube and every graphics library has agreed on them for decades.
+#
+# TUPLES, NOT A COLOUR CLASS
+#
+# Everything in kaypy that takes a colour already takes a tuple: rgb() returns
+# one, background= is one, outline() takes one. A constant that is just a
+# tuple therefore works in every one of those places on the day it is added,
+# with nothing to teach and nothing to convert. A student can also read it —
+# printing RED gives (255, 0, 0), which is the lesson.
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+MAGENTA = (255, 0, 255)
+CYAN = (0, 255, 255)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+
 def rgb(r=255, g=None, b=None):
     """A colour, as a plain (r, g, b) tuple.
 

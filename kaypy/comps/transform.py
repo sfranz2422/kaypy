@@ -1,6 +1,7 @@
 """Small appearance/behavior components: anchor, scale, rotate, color,
 opacity, outline, z, fixed()."""
 from ..gameobj import Comp
+from ..helpers import rgb
 from ..vec2 import Vec2, vec2
 
 _ANCHOR_NAMES = {
@@ -86,11 +87,31 @@ def rotate(angle=0):
 class ColorComp(Comp):
     id = "color"
 
-    def __init__(self, r=255, g=255, b=255):
-        self.color = (r, g, b)
+    def __init__(self, r=255, g=None, b=None):
+        self.color = rgb(r, g, b)
 
 
-def color(r=255, g=255, b=255):
+def color(r=255, g=None, b=None):
+    """A colour, in any of the spellings rgb() accepts.
+
+    `color(255, 128, 0)`, `color("#ff8800")`, `color(200)` for a grey, and
+    `color(RED)` all work, because this hands its arguments straight to
+    rgb(). Before that it took three numbers only, so `color(RED)` quietly
+    set red to a tuple — the constants would have been useless in the one
+    place a beginner would reach for them first.
+
+    THE DEFAULTS HAD TO CHANGE TOO
+    
+    Handing the arguments to rgb() is not enough on its own. While this read
+    `color(r=255, g=255, b=255)`, `color(200)` still arrived at rgb() as
+    (200, 255, 255) — rgb()'s "one number is a grey" rule could never fire,
+    because g and b were never missing. The defaults are None here for the
+    same reason they are None there.
+
+    One behaviour changed on the way: `color(255, 128)` used to return
+    (255, 128, 255), silently inventing a blue nobody asked for. It now
+    raises the same sentence rgb() has always raised.
+    """
     return ColorComp(r, g, b)
 
 
@@ -110,10 +131,18 @@ class OutlineComp(Comp):
 
     def __init__(self, width=1, color=(0, 0, 0)):
         self.outlineWidth = width
-        self.outlineColor = color
+        self.outlineColor = rgb(color)
 
 
 def outline(width=1, color=(0, 0, 0)):
+    """An outline, in any spelling rgb() accepts.
+
+    A tuple already worked here, so outline(2, GREEN) was fine before this.
+    Going through rgb() is for the other spellings — outline(2, "#ff8800")
+    and outline(2, 200) — so that every place a colour goes takes the same
+    set of forms. One name behaving differently from the rest is the sort of
+    thing a student reads as "I did it wrong".
+    """
     return OutlineComp(width, color)
 
 

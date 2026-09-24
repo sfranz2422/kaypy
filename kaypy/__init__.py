@@ -13,7 +13,8 @@ from .engine import Engine, current_engine, rand, randi, choose
 from .debugmod import debug
 from .easings import easings
 from .helpers import (time, destroy, destroyAll, isKeyDown, rgb, lerp,
-                      clamp, chance, wave, deg2rad, rad2deg)
+                      clamp, chance, wave, deg2rad, rad2deg,
+                      RED, GREEN, BLUE, YELLOW, MAGENTA, CYAN, WHITE, BLACK)
 from .level import addLevel, Level
 from .kaboom import addKaboom
 
@@ -63,6 +64,7 @@ __all__ = [
     "say", "ask", "isShowing", "close",
     "rand", "randi", "choose", "chance", "lerp", "clamp", "wave",
     "time", "destroy", "destroyAll", "isKeyDown", "rgb",
+    "RED", "GREEN", "BLUE", "YELLOW", "MAGENTA", "CYAN", "WHITE", "BLACK",
     "raycast",
     "deg2rad", "rad2deg",
     "mousePos", "toWorld",
@@ -104,7 +106,13 @@ def setGravity(n):
     current_engine().setGravity(n)
 
 
-def setBackground(r, g, b):
+def setBackground(r=0, g=None, b=None):
+    """The background colour, in any spelling rgb() accepts.
+
+    The engine method was widened first and this wrapper was not, so
+    setBackground(BLUE) still raised "missing 2 required positional
+    arguments" — a public function is only as wide as its narrowest layer.
+    """
     current_engine().setBackground(r, g, b)
 
 

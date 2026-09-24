@@ -194,8 +194,16 @@ class Engine:
     def setGravity(self, n):
         self.physics.gravity = n
 
-    def setBackground(self, r, g, b):
-        self._background = (r, g, b)
+    def setBackground(self, r, g=None, b=None):
+        """The background colour, in any spelling rgb() accepts.
+
+        Three numbers, a hex string, one number for a grey, or one of the
+        named constants: setBackground(BLUE). Left as three required numbers
+        it would have been the one colour-taking name where a constant did
+        not work, which is worse than not having constants at all.
+        """
+        from .helpers import rgb
+        self._background = rgb(r, g, b)
 
     def setCamPos(self, pos):
         self.camera.setPos(pos)
