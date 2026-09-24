@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kaypy"
-version = "0.13.4"
+version = "0.13.5"
 description = "A real-Python game engine with KAPLAY's component API, backed by pygame-ce, exporting to the browser."
 readme = "README.md"
 requires-python = ">=3.10"
