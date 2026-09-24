@@ -59,10 +59,30 @@ import webbrowser
 
 import pygame
 
-# The panel currently up, or None. One at a time: a second panel over the
-# first would have to decide which owns the keyboard, and there is no answer
-# to that a beginner would enjoy discovering.
+# The panel currently up, or None, and the ones waiting behind it.
+#
+# ONE AT A TIME, BUT NONE THROWN AWAY
+#
+# Only one panel is ever on screen: two at once would have to decide which
+# owns the keyboard, and there is no answer to that a beginner would enjoy
+# discovering. So a second panel opened while one is up waits its turn.
+#
+# It used to be closed instead, on the assumption that a panel goes away
+# because somebody answered it. That holds when you call ask() from inside a
+# handler, and it is false for the most obvious way to write a quiz:
+#
+#     @ask("What is your name?")
+#     def greeted(reply): ...
+#
+#     @ask("Which keyword starts a loop?", ["if", "for", "def"], answer=1)
+#     def checked(correct): ...
+#
+# Both decorators run as the file is read, microseconds apart and long before
+# anyone can answer anything. The first panel was created and immediately
+# discarded by the second, so only the second question was ever asked and
+# `greeted` never ran — with nothing printed and nothing raised to say so.
 _current = None
+_queue = []
 
 
 def _engine():
@@ -169,16 +189,31 @@ def say(text, link=None, button="OK", then=None):
     `link` is a (label, url) pair. In a browser it is a real link; on a
     desktop it opens your browser.
     """
-    def register(fn):
+    def straight(fn):
         _show(Panel(text, link=link, button=button, then=fn))
         return fn
 
     if then is not None:
-        return register(then)
+        return straight(then)
     if callable(text):
         raise TypeError("say() needs some words: say(\"Well done!\")")
-    _show(Panel(text, link=link, button=button, then=None))
-    return register
+
+    # The panel goes up now, because `say("Saved!")` on its own is a
+    # statement and has to show something. If a decorator follows, it gives
+    # this panel its handler rather than opening a second one.
+    #
+    # It used to open a second one. That was invisible while a new panel
+    # closed whatever was already up — the duplicate replaced the original
+    # and looked like one panel. With panels queueing instead, `@say("Hi")`
+    # showed "Hi" twice, and the bug had been there all along.
+    shown = Panel(text, link=link, button=button, then=None)
+    _show(shown)
+
+    def attach(fn):
+        shown.then = fn
+        return fn
+
+    return attach
 
 
 def ask(question, choices=None, answer=None, placeholder=None, then=None):
@@ -224,6 +259,14 @@ def close():
     view = _views.pop("view", None)
     if view is not None:
         view.destroy()
+
+    # The next one, if anybody is waiting. The game stays paused between
+    # them: resuming for a frame and pausing again would flash the game
+    # behind the panels, which reads as a bug.
+    if _queue:
+        _present(_queue.pop(0))
+        return
+
     eng = _safe_engine()
     if eng is not None:
         eng.resume()
@@ -240,11 +283,15 @@ def _safe_engine():
 
 
 def _show(panel):
-    global _current
+    """Put a panel up, or get in line behind the one that is."""
     if _current is not None:
-        # Answering the first panel is what makes room for the second. Left
-        # to stack, two panels would both think they had the keyboard.
-        close()
+        _queue.append(panel)
+        return
+    _present(panel)
+
+
+def _present(panel):
+    global _current
     eng = _engine()
     _current = panel
     eng.pause()
@@ -458,7 +505,10 @@ def draw(screen, engine):
 def reset():
     """Forget any panel. Called when a new engine starts, so a panel cannot
     outlive the game that opened it — which is exactly what happens in a
-    browser IDE, where the page stays and the game is run again."""
+    browser IDE, where the page stays and the game is run again.
+
+    The queue goes with it. A question still waiting from the last run is not
+    a question about this one."""
     global _current
     view = _views.pop("view", None)
     if view is not None:
@@ -467,3 +517,4 @@ def reset():
         except Exception:                                      # noqa: BLE001
             pass
     _current = None
+    _queue.clear()
