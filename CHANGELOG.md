@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.13.7
+
+**`say()` no longer draws a text box.**
+
+    say("Bran the Smith: the well has never once run dry.")
+
+put a panel up with a text field in it. The player could click into it and
+type, and whatever they typed was discarded, because a `say()` handler is
+called with nothing. On the desktop the hint underneath read "Type your
+answer, then press Enter." On a line of dialogue.
+
+Neither renderer was wrong by itself. Both decided what a panel looks like
+from the only thing they could see — whether it had choices:
+
+    if p.choices:  ...one button per choice...
+    else:          ...a text box...
+
+and a `say()` has no choices, exactly like a short-answer `ask()`. Two
+renderers guessing the same thing from the same missing fact is not one bug
+twice, it is one missing field; `finish()` was making the same guess a third
+time, from three negatives (`choices is None and answer is None and
+chosen_text is None`).
+
+A `Panel` now records whether it is asking anything. `say()` sets it false
+and gets a button; `ask()` sets it true and keeps the box. `finish()` reads
+the flag instead of inferring it. Enter or space closes a message, the same
+as clicking its button.
+
+`tests/test_say_panel.py` covers all three kinds of panel in both renderers.
+The browser one had never been tested at all — it imports `js`, and there is
+no browser in a test run — so it now gets a small fake DOM and `_build` runs
+against it for real. The desktop check reads the pixels back: a short
+answer's box is white, a message's button is green. An earlier version of
+that check only asserted `draw()` did not raise, and drawing a text box on a
+message does not raise, so putting the bug back sailed straight through it.
+
 ## 0.13.0
 
 **A new check: nothing here may need a second install.**

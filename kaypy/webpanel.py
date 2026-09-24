@@ -121,7 +121,9 @@ class DomView:
                 b.addEventListener("click", _handler(
                     lambda _e, i=i: self._answered(i, p.choices[i])))
                 box.appendChild(b)
-        else:
+        elif p.asks:
+            # A short answer: a real <input>, with the phone keyboard and
+            # paste, which is most of the reason this renderer exists.
             field = doc.createElement("input")
             field.className = "kaypy-text"
             field.type = "text"
@@ -137,6 +139,17 @@ class DomView:
             go.textContent = p.button or "OK"
             go.addEventListener("click", _handler(
                 lambda _e: self._answered(None, self.field.value)))
+            box.appendChild(go)
+        else:
+            # A message: one button and nothing to fill in. It used to get
+            # the branch above — a text box on a line of dialogue, which the
+            # player could type into and which was then thrown away.
+            go = doc.createElement("button")
+            go.className = "kaypy-go"
+            go.type = "button"
+            go.textContent = p.button or "OK"
+            go.addEventListener("click", _handler(
+                lambda _e: self._answered(None, None)))
             box.appendChild(go)
 
         if p.link:
@@ -154,9 +167,12 @@ class DomView:
 
         hint = doc.createElement("p")
         hint.className = "kaypy-hint"
-        hint.textContent = ("Click an answer, or press its number."
-                            if p.choices else
-                            "Type your answer, then press Enter.")
+        if p.choices:
+            hint.textContent = "Click an answer, or press its number."
+        elif p.asks:
+            hint.textContent = "Type your answer, then press Enter."
+        else:
+            hint.textContent = "Press Enter, or click %s." % (p.button or "OK")
         box.appendChild(hint)
 
         veil.appendChild(box)
@@ -166,7 +182,7 @@ class DomView:
         # The canvas has the keyboard while a game is running, so without
         # this the first thing typed goes to the game, not the panel.
         try:
-            (self.field if not p.choices else box).focus()
+            (self.field if (p.asks and not p.choices) else box).focus()
         except Exception:                                      # noqa: BLE001
             pass
 
@@ -266,6 +282,9 @@ class DomView:
                 i = int(key) - 1
                 if 0 <= i < len(p.choices):
                     self._answered(i, p.choices[i])
+        elif not p.asks:
+            if key in ("Enter", " "):
+                self._answered(None, None)
         elif key == "Enter":
             self._answered(None, self.field.value)
 

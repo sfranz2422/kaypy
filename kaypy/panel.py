@@ -99,7 +99,7 @@ class Panel:
     """
 
     def __init__(self, text, choices=None, answer=None, link=None,
-                 button="OK", placeholder=None, then=None):
+                 button="OK", placeholder=None, then=None, asks=False):
         self.text = str(text)
         self.choices = list(choices) if choices else None
         self.answer = answer
@@ -107,6 +107,27 @@ class Panel:
         self.button = button
         self.placeholder = placeholder or ""
         self.then = then
+
+        #: Is this a question? Set by ask(), false for say().
+        #
+        # WHY THIS IS RECORDED RATHER THAN WORKED OUT
+        #
+        # Both renderers used to decide what a panel looks like from the only
+        # thing they could see — whether it had choices:
+        #
+        #     if p.choices:  ...buttons...
+        #     else:          ...a text box...
+        #
+        # A say() has no choices, exactly like a short-answer ask(), so it got
+        # the short-answer layout: a real text field, which the player could
+        # type into, and whose contents finish() then threw away, because a
+        # say() handler is called with nothing. On the desktop the hint under
+        # it even read "Type your answer, then press Enter." On a message.
+        #
+        # Two renderers guessing the same thing from the same missing fact is
+        # not a rendering bug twice, it is one missing field. So the panel
+        # says what it is, and nobody has to infer it.
+        self.asks = asks
 
         self.typed = ""                  # short-answer box
         self.hover = -1                  # which choice the mouse is over
@@ -139,14 +160,15 @@ class Panel:
         if self.then is None:
             return
 
-        correct = self._is_correct(chosen_index, chosen_text)
-        if self.choices is None and self.answer is None and chosen_text is None:
-            value = None                          # a say(), with nothing to give
-        elif correct is None:
-            value = chosen_text
-        else:
-            value = correct
+        # A say() has nothing to hand over. That used to be inferred from
+        # three negatives — no choices, no answer, nothing typed — which was
+        # the same guess the renderers were making, in a third place.
+        if not self.asks:
+            _call(self.then, None)
+            return
 
+        correct = self._is_correct(chosen_index, chosen_text)
+        value = chosen_text if correct is None else correct
         _call(self.then, value)
 
 
@@ -190,7 +212,7 @@ def say(text, link=None, button="OK", then=None):
     desktop it opens your browser.
     """
     def straight(fn):
-        _show(Panel(text, link=link, button=button, then=fn))
+        _show(Panel(text, link=link, button=button, then=fn, asks=False))
         return fn
 
     if then is not None:
@@ -206,7 +228,7 @@ def say(text, link=None, button="OK", then=None):
     # closed whatever was already up — the duplicate replaced the original
     # and looked like one panel. With panels queueing instead, `@say("Hi")`
     # showed "Hi" twice, and the bug had been there all along.
-    shown = Panel(text, link=link, button=button, then=None)
+    shown = Panel(text, link=link, button=button, then=None, asks=False)
     _show(shown)
 
     def attach(fn):
@@ -233,7 +255,7 @@ def ask(question, choices=None, answer=None, placeholder=None, then=None):
     """
     def register(fn):
         _show(Panel(question, choices=choices, answer=answer,
-                    placeholder=placeholder, then=fn))
+                    placeholder=placeholder, then=fn, asks=True))
         return fn
 
     if then is not None:
@@ -352,13 +374,19 @@ class _DesktopView:
                 if i < len(p.choices):
                     p.finish(i, p.choices[i])
             return
-        if p.answer is not None or p.placeholder or p.choices is None:
-            if e.key == pygame.K_RETURN:
-                p.finish(None, p.typed)
-            elif e.key == pygame.K_BACKSPACE:
-                p.typed = p.typed[:-1]
-            elif e.unicode and e.unicode.isprintable():
-                p.typed += e.unicode
+        # A say() has no box, so there is nothing to type into. Enter still
+        # closes it — that is the button.
+        if not p.asks:
+            if e.key in (pygame.K_RETURN, pygame.K_SPACE):
+                p.finish(None, None)
+            return
+        # A short answer: type into it.
+        if e.key == pygame.K_RETURN:
+            p.finish(None, p.typed)
+        elif e.key == pygame.K_BACKSPACE:
+            p.typed = p.typed[:-1]
+        elif e.unicode and e.unicode.isprintable():
+            p.typed += e.unicode
 
     def _click(self, point):
         p = self.panel
@@ -370,7 +398,7 @@ class _DesktopView:
             p.finish(i, p.choices[i])
             return
         if self.button_rect and self.button_rect.collidepoint(point):
-            p.finish(None, p.typed if p.choices is None else None)
+            p.finish(None, p.typed if p.asks and p.choices is None else None)
 
     def _choice_at(self, point):
         for rect, i in self.rects:
@@ -424,7 +452,8 @@ class _DesktopView:
                             (r.left + 10, r.top + 6))
                 self.rects.append((r, i))
                 y += CHOICE_H
-        else:
+        elif p.asks:
+            # A short answer: a box to type in.
             r = pygame.Rect(box.left + PAD, y, box_w - PAD * 2, CHOICE_H - 6)
             pygame.draw.rect(screen, (255, 255, 255), r, border_radius=6)
             pygame.draw.rect(screen, (120, 140, 170), r, width=2, border_radius=6)
@@ -432,6 +461,16 @@ class _DesktopView:
             colour = (20, 24, 34) if p.typed else (150, 158, 170)
             screen.blit(small.render(shown + ("|" if p.typed else ""), True, colour),
                         (r.left + 10, r.top + 6))
+            self.button_rect = r
+            y += CHOICE_H
+        else:
+            # A message: one button, and nothing to fill in.
+            label = p.button or "OK"
+            text_w = small.size(label)[0]
+            r = pygame.Rect(box.left + PAD, y, text_w + 36, CHOICE_H - 6)
+            pygame.draw.rect(screen, (80, 150, 60), r, border_radius=6)
+            screen.blit(small.render(label, True, (255, 255, 255)),
+                        (r.left + 18, r.top + 6))
             self.button_rect = r
             y += CHOICE_H
 
@@ -446,8 +485,12 @@ class _DesktopView:
                              (pos[0] + surf.get_width(), pos[1] + surf.get_height()))
             y += LINE
 
-        hint = ("Click an answer, or press its number."
-                if p.choices else "Type your answer, then press Enter.")
+        if p.choices:
+            hint = "Click an answer, or press its number."
+        elif p.asks:
+            hint = "Type your answer, then press Enter."
+        else:
+            hint = "Press Enter, or click %s." % (p.button or "OK")
         screen.blit(small.render(hint, True, (110, 118, 132)),
                     (box.left + PAD, box.bottom - LINE))
 
